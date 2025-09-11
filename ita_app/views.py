@@ -503,6 +503,26 @@ def create_employee(request):
 
 
 
+@api_view(["GET"])
+def get_employees(request):
+    # Requête SQL prédéfinie
+    sql = "SELECT * FROM employees;"
+    try:
+        with connection.cursor() as cursor:
+            
+            cursor.execute(sql)
+            columns = [col[0] for col in cursor.description]
+            rows = cursor.fetchall()
+
+        # Transformer le résultat en liste de dictionnaires
+        results = [dict(zip(columns, row)) for row in rows]
+
+        return Response({"status": "ok", "results": results})
+
+    except OperationalError as e:
+        return Response({"status": "error", "message": str(e)}, status=500)
+    except Exception as e:
+        return Response({"status": "error", "message": str(e)}, status=400)
 
 
 
