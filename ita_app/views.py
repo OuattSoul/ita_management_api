@@ -358,7 +358,7 @@ def request_recruitment(request):
         with connection.cursor() as cursor:
             # INSERT dans users_table
             cursor.execute("""
-                INSERT INTO recruitments (job_title,req_service,job_type,priority,salary,needs,skills,)
+                INSERT INTO recruitments (job_title,req_service,job_type,priority,salary,needs,skills)
                 VALUES (%s, %s, %s, %s, %s, %s,%s)
                 RETURNING id;
             """, [job_title, req_service, job_type,salary, skills, needs,priority])
