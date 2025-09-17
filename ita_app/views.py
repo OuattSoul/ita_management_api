@@ -227,7 +227,7 @@ def assign_mission(request):
         with connection.cursor() as cursor:
             # INSERT dans users_table
             cursor.execute("""
-                INSERT INTO assign_missions (req_id,req_service,project_zone,people_required,priority,deadline,mission_status)
+                INSERT INTO missions (req_id,req_service,project_zone,people_required,priority,deadline,mission_status)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
                 RETURNING id;
             """, [req_id, req_service, project_zone,people_required, priority,deadline, mission_status])
