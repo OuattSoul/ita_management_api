@@ -34,6 +34,6 @@ urlpatterns = [
     path("api/recruitments/get-recruitments/", get_recruitments, name="get-recruitments"),
     path("api/employees/create/", create_employee, name="create-employee"),
     path("api/employees/list/", get_employees, name="get-employees"),
-    path("api/employees/pointage/", presence_pointage, name="set-presence"),
+    path("api/employees/set-pointage/", presence_pointage, name="set-presence"),
     path("api/employees/pointage/", get_pointage, name="get-presence"),
 ]
