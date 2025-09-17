@@ -344,7 +344,7 @@ def request_recruitment(request):
     req_service = data.get("req_service")
     job_title = data.get("job_title")
     priority = data.get("priority")
-    status = data.get("status")
+    #status = data.get("status")
     salary = data.get("salary")
     needs = data.get("needs")
     skills = data.get("skills")
@@ -358,10 +358,10 @@ def request_recruitment(request):
         with connection.cursor() as cursor:
             # INSERT dans users_table
             cursor.execute("""
-                INSERT INTO recruitments (job_title,req_service,job_type,status_field,salary,skills,created_at,priority)
+                INSERT INTO recruitments (job_title,req_service,job_type,salary,skills,created_at,priority)
                 VALUES (%s, %s, %s, %s, %s, %s, %s,%s)
                 RETURNING id;
-            """, [job_title, req_service, job_type, status, salary, skills, created_at, priority])
+            """, [job_title, req_service, job_type,salary, skills, created_at, priority])
 
             leave_id = cursor.fetchone()[0]
            
