@@ -276,7 +276,7 @@ def set_leaves(request):
     employee_id = data.get("employee_id")
     employee_function = data.get("employee_function")
     leave_type = data.get("leave_type")
-    reason = data.get("reason")
+    #reason = data.get("reason")
     start_date = data.get("start_date")
     end_date = data.get("end_date")
     duration = data.get("duration")
@@ -285,7 +285,7 @@ def set_leaves(request):
     priority = data.get("priority")
     created_at = timezone.now()
 
-    if not all([employee_id, leave_type,employee_function, reason, start_date, end_date, duration, workflow,status, priority]):
+    if not all([employee_id, leave_type,employee_function, start_date, end_date, duration, workflow,status, priority]):
         return Response({"status": "error", "message": "Tous les champs sont requis"},
                         status=status.HTTP_400_BAD_REQUEST)  
 
@@ -293,10 +293,10 @@ def set_leaves(request):
         with connection.cursor() as cursor:
             # INSERT dans users_table
             cursor.execute("""
-                INSERT INTO leaves (employee_id,leave_type,employee_function,reason,start_date,end_date,duration,workflow,status,priority,created_at)
+                INSERT INTO leaves (employee_id,leave_type,employee_function,start_date,end_date,duration,workflow,status,priority,created_at)
                 VALUES (%s, %s, %s, %s, %s, %s, %s,%s)
                 RETURNING id;
-            """, [employee_id,leave_type,employee_function,reason,start_date,end_date,duration,workflow,status,priority,created_at])
+            """, [employee_id,leave_type,employee_function,start_date,end_date,duration,workflow,status,priority,created_at])
 
             leave_id = cursor.fetchone()[0]
            
@@ -348,7 +348,7 @@ def request_recruitment(request):
     salary = data.get("salary")
     needs = data.get("needs")
     skills = data.get("skills")
-    created_at = timezone.now()
+    #created_at = timezone.now()
 
     if not all([job_type,job_title, salary, req_service, priority, needs, skills, priority]):
         return Response({"status": "error", "message": "Tous les champs sont requis"},
@@ -358,10 +358,10 @@ def request_recruitment(request):
         with connection.cursor() as cursor:
             # INSERT dans users_table
             cursor.execute("""
-                INSERT INTO recruitments (job_title,req_service,job_type,salary,skills,created_at,priority)
-                VALUES (%s, %s, %s, %s, %s, %s, %s,%s)
+                INSERT INTO recruitments (job_title,req_service,job_type,priority,salary,needs,skills,)
+                VALUES (%s, %s, %s, %s, %s, %s,%s)
                 RETURNING id;
-            """, [job_title, req_service, job_type,salary, skills, created_at, priority])
+            """, [job_title, req_service, job_type,salary, skills, needs,priority])
 
             leave_id = cursor.fetchone()[0]
            
