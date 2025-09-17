@@ -338,15 +338,16 @@ def get_leaves(request):
 def request_recruitment(request):
     data = request.data
     job_type = data.get("job_type")
+    req_service = data.get("req_service")
     job_title = data.get("job_title")
-    proposed_salary = data.get("proposed_salary")
-    requesting_service = data.get("requesting_service")
-    start_date = data.get("start_date")
-    message = data.get("message")
-    status_field = data.get("status_field")
+    priority = data.get("priority")
+    status = data.get("status")
+    salary = data.get("salary")
+    needs = data.get("needs")
+    skills = data.get("skills")
     created_at = timezone.now()
 
-    if not all([job_type,job_title, proposed_salary, requesting_service, start_date, message, status_field]):
+    if not all([job_type,job_title, salary, req_service, priority, needs, skills, priority]):
         return Response({"status": "error", "message": "Tous les champs sont requis"},
                         status=status.HTTP_400_BAD_REQUEST)  
 
@@ -354,17 +355,17 @@ def request_recruitment(request):
         with connection.cursor() as cursor:
             # INSERT dans users_table
             cursor.execute("""
-                INSERT INTO recruitment_requests (job_type,job_title,proposed_salary,requesting_service,start_date,message,status_field,created_at)
+                INSERT INTO recruitments (job_title,req_service,job_type,status_field,salary,skills,created_at,priority)
                 VALUES (%s, %s, %s, %s, %s, %s, %s,%s)
                 RETURNING id;
-            """, [job_type, job_title, proposed_salary, requesting_service,start_date, message,status_field, created_at])
+            """, [job_title, req_service, job_type, status, salary, skills, created_at, priority])
 
             leave_id = cursor.fetchone()[0]
            
 
             return Response({
                 "status": "ok",
-                "message": f"Requête de recrutement {job_title} enregistré dans avec succès"
+                "message": f"Requête de recrutement {job_title} envoyée dans avec succès"
             })
     
     except IntegrityError as e:
@@ -378,7 +379,7 @@ def request_recruitment(request):
 @api_view(["GET"])
 def get_recruitments(request):
     # Requête SQL prédéfinie
-    sql = "SELECT * FROM recruitment_requests;"
+    sql = "SELECT * FROM recruitments;"
     try:
         with connection.cursor() as cursor:
             
@@ -397,6 +398,67 @@ def get_recruitments(request):
         return Response({"status": "error", "message": str(e)}, status=400)
 
 
+# pointage
+@api_view(["POST"])
+def presence_pointage(request):
+    data = request.data
+    employee_id = data.get("employee_id")
+    employee_function = data.get("employee_function")
+    site = data.get("site")
+    arrival = data.get("arrival")
+    departure = data.get("departure")
+    time_worked = data.get("time_worked")
+
+    if not all([employee_id,employee_function, site, arrival, departure, time_worked]):
+        return Response({"status": "error", "message": "Tous les champs sont requis"},
+                        status=status.HTTP_400_BAD_REQUEST)  
+
+    try:
+        with connection.cursor() as cursor:
+            # INSERT dans users_table
+            cursor.execute("""
+                INSERT INTO recruitments (employee_id,employee_function,site,arrival,departure,time_worked)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                RETURNING id;
+            """, [employee_id, employee_function, site, arrival, departure, time_worked])
+
+            leave_id = cursor.fetchone()[0]
+           
+
+            return Response({
+                "status": "ok",
+                "message": f"Pointage enregistré avec succès"
+            })
+    
+    except IntegrityError as e:
+        return Response({"status": "error", "message": str(e)},
+                        status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({"status": "error", "message": str(e)},
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+# get pointage
+@api_view(["GET"])
+def get_pointage(request):
+    # Requête SQL prédéfinie
+    sql = "SELECT * FROM presences;"
+    try:
+        with connection.cursor() as cursor:
+            
+            cursor.execute(sql)
+            columns = [col[0] for col in cursor.description]
+            rows = cursor.fetchall()
+
+        # Transformer le résultat en liste de dictionnaires
+        results = [dict(zip(columns, row)) for row in rows]
+
+        return Response({"status": "ok", "results": results})
+
+    except OperationalError as e:
+        return Response({"status": "error", "message": str(e)}, status=500)
+    except Exception as e:
+        return Response({"status": "error", "message": str(e)}, status=400)
+    
 # employee management
 
 @api_view(["POST"])
@@ -502,7 +564,26 @@ def create_employee(request):
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@api_view(["GET"])
+def get_employees(request):
+    # Requête SQL prédéfinie
+    sql = "SELECT * FROM employees;"
+    try:
+        with connection.cursor() as cursor:
+            
+            cursor.execute(sql)
+            columns = [col[0] for col in cursor.description]
+            rows = cursor.fetchall()
 
+        # Transformer le résultat en liste de dictionnaires
+        results = [dict(zip(columns, row)) for row in rows]
+
+        return Response({"status": "ok", "results": results})
+
+    except OperationalError as e:
+        return Response({"status": "error", "message": str(e)}, status=500)
+    except Exception as e:
+        return Response({"status": "error", "message": str(e)}, status=400)
 
 
 

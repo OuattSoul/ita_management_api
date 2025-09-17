@@ -17,7 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
-from ita_app.views import create_employee,db_connectivity,get_staff,assign_mission,get_missions,set_leaves,get_leaves,request_recruitment,get_recruitments, get_users_query, register_staff, login_staff
+from ita_app.views import create_employee,get_employees,db_connectivity,get_staff,assign_mission,get_missions,set_leaves,get_leaves,request_recruitment,get_recruitments, get_users_query, register_staff, login_staff
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -33,4 +33,5 @@ urlpatterns = [
     path("api/recruitments/request/", request_recruitment, name="request-recruitment"),
     path("api/recruitments/get-recruitments/", get_recruitments, name="get-recruitments"),
     path("api/employees/create/", create_employee, name="create-employee"),
+    path("api/employees/list/", get_employees, name="get-employees"),
 ]
