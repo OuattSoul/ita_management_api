@@ -274,15 +274,18 @@ def get_missions(request):
 def set_leaves(request):
     data = request.data
     employee_id = data.get("employee_id")
+    employee_function = data.get("employee_function")
     leave_type = data.get("leave_type")
     reason = data.get("reason")
     start_date = data.get("start_date")
     end_date = data.get("end_date")
-    address_during_leave = data.get("address_during_leave")
-    phone_contact = data.get("phone_contact")
+    duration = data.get("duration")
+    workflow = data.get("workflow")
+    status = data.get("status")
+    priority = data.get("priority")
     created_at = timezone.now()
 
-    if not all([employee_id, leave_type, reason, start_date, end_date, address_during_leave, phone_contact]):
+    if not all([employee_id, leave_type,employee_function, reason, start_date, end_date, duration, workflow,status, priority]):
         return Response({"status": "error", "message": "Tous les champs sont requis"},
                         status=status.HTTP_400_BAD_REQUEST)  
 
@@ -290,10 +293,10 @@ def set_leaves(request):
         with connection.cursor() as cursor:
             # INSERT dans users_table
             cursor.execute("""
-                INSERT INTO leave_requests (employee_id,leave_type,reason,start_date,end_date,address_during_leave,phone_contact,created_at)
+                INSERT INTO leaves (employee_id,leave_type,employee_function,reason,start_date,end_date,duration,workflow,status,priority,created_at)
                 VALUES (%s, %s, %s, %s, %s, %s, %s,%s)
                 RETURNING id;
-            """, [employee_id, leave_type, reason, start_date,end_date, address_during_leave,phone_contact, created_at])
+            """, [employee_id,leave_type,employee_function,reason,start_date,end_date,duration,workflow,status,priority,created_at])
 
             leave_id = cursor.fetchone()[0]
            
@@ -314,7 +317,7 @@ def set_leaves(request):
 @api_view(["GET"])
 def get_leaves(request):
     # Requête SQL prédéfinie
-    sql = "SELECT * FROM leave_requests;"
+    sql = "SELECT * FROM leaves;"
     try:
         with connection.cursor() as cursor:
             
