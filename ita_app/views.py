@@ -296,9 +296,9 @@ def set_leaves(request):
                 INSERT INTO leaves (employee_id,employee_function,leave_type,start_date,end_date,duration,workflow,priority,leave_status)
                 VALUES (%s, %s, %s, %s, %s, %s, %s,%s, %s)
                 RETURNING id;
-            """, [employee_id,leave_type,employee_function,start_date,end_date,duration,workflow,leave_status])
+            """, [employee_id,employee_function,leave_type,start_date,end_date,duration,workflow,priority,leave_status])
 
-            leave_id = cursor.fetchone()[0]
+            employee_id = cursor.fetchone()[0]
            
 
             return Response({
