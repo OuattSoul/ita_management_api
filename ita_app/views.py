@@ -294,7 +294,7 @@ def set_leaves(request):
             # INSERT dans users_table
             cursor.execute("""
                 INSERT INTO leaves (employee_id,leave_type,employee_function,start_date,end_date,duration,workflow,status,priority,created_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s,%s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s,%s, %s, %s)
                 RETURNING id;
             """, [employee_id,leave_type,employee_function,start_date,end_date,duration,workflow,status,priority,created_at])
 
@@ -358,7 +358,7 @@ def request_recruitment(request):
         with connection.cursor() as cursor:
             # INSERT dans users_table
             cursor.execute("""
-                INSERT INTO recruitments (job_title,req_service,job_type,priority,salary,needs,skills)
+                INSERT INTO recruitments (job_title,req_service,job_type,salary,priority,needs,skills,priority)
                 VALUES (%s, %s, %s, %s, %s, %s,%s)
                 RETURNING id;
             """, [job_title, req_service, job_type,salary, skills, needs,priority])
