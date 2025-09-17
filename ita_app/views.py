@@ -564,10 +564,6 @@ def create_employee(request):
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-<<<<<<< HEAD
-=======
-
->>>>>>> e5c68a388cd0b230172dd0a0bd9791a95d5955e6
 @api_view(["GET"])
 def get_employees(request):
     # Requête SQL prédéfinie
