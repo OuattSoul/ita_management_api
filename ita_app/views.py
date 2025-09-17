@@ -281,11 +281,11 @@ def set_leaves(request):
     end_date = data.get("end_date")
     duration = data.get("duration")
     workflow = data.get("workflow")
-    status = data.get("status")
+    leave_status = data.get("leave_status")
     priority = data.get("priority")
     created_at = timezone.now()
 
-    if not all([employee_id, leave_type,employee_function, start_date, end_date, duration, workflow,status, priority]):
+    if not all([employee_id, leave_type,employee_function, start_date, end_date, duration, workflow,leave_status, priority]):
         return Response({"status": "error", "message": "Tous les champs sont requis"},
                         status=status.HTTP_400_BAD_REQUEST)  
 
@@ -293,10 +293,10 @@ def set_leaves(request):
         with connection.cursor() as cursor:
             # INSERT dans users_table
             cursor.execute("""
-                INSERT INTO leaves (employee_id,leave_type,employee_function,start_date,end_date,duration,workflow,status,priority,created_at)
+                INSERT INTO leaves (employee_id,employee_function,leave_type,start_date,end_date,duration,workflow,leave_status,priority,created_at)
                 VALUES (%s, %s, %s, %s, %s, %s, %s,%s, %s, %s)
                 RETURNING id;
-            """, [employee_id,leave_type,employee_function,start_date,end_date,duration,workflow,status,priority,created_at])
+            """, [employee_id,leave_type,employee_function,start_date,end_date,duration,workflow,leave_status,priority,created_at])
 
             leave_id = cursor.fetchone()[0]
            
