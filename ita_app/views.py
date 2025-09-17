@@ -211,16 +211,15 @@ def get_staff(request):
 @api_view(["POST"])
 def assign_mission(request):
     data = request.data
-    project = data.get("project")
-    mission_type = data.get("mission_type")
-    people_count = data.get("people_count")
-    start_date = data.get("start_date")
-    end_date = data.get("end_date")
-    urgency_level = data.get("urgency_level")
-    special_instructions = data.get("special_instructions")
-    created_at = timezone.now()
+    req_id = data.get("req_id")
+    req_service = data.get("req_service")
+    project_zone = data.get("project_zone")
+    people_required = data.get("people_required")
+    priority = data.get("priority")
+    deadline = data.get("deadline")
+    mission_status = data.get("mission_status")
 
-    if not all([project, mission_type, people_count, start_date, end_date, urgency_level, special_instructions]):
+    if not all([req_id, req_service, people_required, project_zone, priority, deadline, mission_status]):
         return Response({"status": "error", "message": "Tous les champs sont requis"},
                         status=status.HTTP_400_BAD_REQUEST)  
 
@@ -228,17 +227,17 @@ def assign_mission(request):
         with connection.cursor() as cursor:
             # INSERT dans users_table
             cursor.execute("""
-                INSERT INTO assign_missions (project,mission_type,people_count,start_date,end_date,urgency_level,special_instructions,created_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s,%s)
+                INSERT INTO assign_missions (req_id,req_service,project_zone,people_required,priority,deadline,mission_status)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
                 RETURNING id;
-            """, [project, mission_type, people_count, start_date,end_date, urgency_level,special_instructions, created_at])
+            """, [req_id, req_service, project_zone,people_required, priority,deadline, mission_status])
 
-            project_id = cursor.fetchone()[0]
+            req_id = cursor.fetchone()[0]
            
 
             return Response({
                 "status": "ok",
-                "message": f"Projet '{project}' assigné dans avec succès"
+                "message": f"Projet '{req_id}' assigné dans avec succès"
             })
     
     except IntegrityError as e:
@@ -251,7 +250,7 @@ def assign_mission(request):
 @api_view(["GET"])
 def get_missions(request):
     # Requête SQL prédéfinie
-    sql = "SELECT * FROM assign_missions;"
+    sql = "SELECT * FROM missions;"
     try:
         with connection.cursor() as cursor:
             
