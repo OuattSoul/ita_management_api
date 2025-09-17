@@ -283,7 +283,7 @@ def set_leaves(request):
     workflow = data.get("workflow")
     leave_status = data.get("leave_status")
     priority = data.get("priority")
-    created_at = timezone.now()
+    #created_at = timezone.now()
 
     if not all([employee_id, leave_type,employee_function, start_date, end_date, duration, workflow,leave_status, priority]):
         return Response({"status": "error", "message": "Tous les champs sont requis"},
@@ -293,10 +293,10 @@ def set_leaves(request):
         with connection.cursor() as cursor:
             # INSERT dans users_table
             cursor.execute("""
-                INSERT INTO leaves (employee_id,employee_function,leave_type,start_date,end_date,duration,workflow,leave_status,priority,created_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s,%s, %s, %s)
+                INSERT INTO leaves (employee_id,employee_function,leave_type,start_date,end_date,duration,workflow,priority,leave_status)
+                VALUES (%s, %s, %s, %s, %s, %s, %s,%s, %s)
                 RETURNING id;
-            """, [employee_id,leave_type,employee_function,start_date,end_date,duration,workflow,leave_status,priority,created_at])
+            """, [employee_id,leave_type,employee_function,start_date,end_date,duration,workflow,leave_status])
 
             leave_id = cursor.fetchone()[0]
            
