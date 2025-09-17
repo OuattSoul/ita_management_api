@@ -405,14 +405,15 @@ def get_recruitments(request):
 @api_view(["POST"])
 def presence_pointage(request):
     data = request.data
-    employee_id = data.get("employee_id")
+    employee_name = data.get("employee_name")
     employee_function = data.get("employee_function")
     site = data.get("site")
     arrival = data.get("arrival")
     departure = data.get("departure")
-    time_worked = data.get("time_worked")
+    time_worked = data.get("time_worked") # departure - arrival
+    pointage_status = data.get("pointage_status") #Présent Demi-journée Absent
 
-    if not all([employee_id,employee_function, site, arrival, departure, time_worked]):
+    if not all([employee_name,employee_function, site, arrival, departure, time_worked,pointage_status]):
         return Response({"status": "error", "message": "Tous les champs sont requis"},
                         status=status.HTTP_400_BAD_REQUEST)  
 
@@ -420,12 +421,12 @@ def presence_pointage(request):
         with connection.cursor() as cursor:
             # INSERT dans users_table
             cursor.execute("""
-                INSERT INTO recruitments (employee_id,employee_function,site,arrival,departure,time_worked)
-                VALUES (%s, %s, %s, %s, %s, %s)
+                INSERT INTO presences (employee_name,employee_function,site,arrival,departure,time_worked,pointage_status)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
                 RETURNING id;
-            """, [employee_id, employee_function, site, arrival, departure, time_worked])
+            """, [employee_name, employee_function, site, arrival, departure, time_worked, pointage_status])
 
-            leave_id = cursor.fetchone()[0]
+            employee_name = cursor.fetchone()[0]
            
 
             return Response({
