@@ -945,7 +945,7 @@ class MissionViewSet(viewsets.ViewSet):
             project_zone = data.get("project_zone")
             people_required = data.get("people_required")
             priority = data.get("priority")
-            deadline = datetime.datetime.date()
+            deadline = data.get("deadline")
             mission_status = data.get("mission_status")
 
             if not all([req_id, req_service, project_zone, people_required, priority, deadline, mission_status]):
