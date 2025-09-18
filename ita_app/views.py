@@ -213,11 +213,11 @@ def assign_mission(request):
     request_service_id = data.get("request_service_id")
     project_zone = data.get("project_zone")
     people_required = data.get("people_required")
-    priority = data.get("priority")
+    job_type_id = data.get("job_type_id")
     deadline = data.get("deadline")
     mission_status = data.get("mission_status")
 
-    if not all([req_id, request_service_id, people_required, project_zone, priority, deadline, mission_status]):
+    if not all([req_id, request_service_id, people_required, project_zone, job_type_id, deadline, mission_status]):
         return Response({"status": "error", "message": "Tous les champs sont requis"},
                         status=status.HTTP_400_BAD_REQUEST)  
 
@@ -225,10 +225,10 @@ def assign_mission(request):
         with connection.cursor() as cursor:
             # INSERT dans users_table
             cursor.execute("""
-                INSERT INTO missions (req_id,request_service_id,project_zone,people_required,priority,deadline,mission_status)
+                INSERT INTO missions (req_id,request_service_id,project_zone,people_required,job_type_id,deadline,mission_status)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
                 RETURNING id;
-            """, [req_id, request_service_id, project_zone,people_required, priority,deadline, mission_status])
+            """, [req_id, request_service_id, project_zone,people_required, job_type_id,deadline, mission_status])
 
             req_id = cursor.fetchone()[0]
            
@@ -279,10 +279,10 @@ def set_leaves(request):
     duration = data.get("duration")
     workflow = data.get("workflow")
     leave_status = data.get("leave_status")
-    priority = data.get("priority")
+    job_type_id = data.get("job_type_id")
     #created_at = timezone.now()
 
-    if not all([employee_id, leave_type,employee_function, start_date, end_date, duration, workflow,leave_status, priority]):
+    if not all([employee_id, leave_type,employee_function, start_date, end_date, duration, workflow,leave_status, job_type_id]):
         return Response({"status": "error", "message": "Tous les champs sont requis"},
                         status=status.HTTP_400_BAD_REQUEST)  
 
@@ -290,10 +290,10 @@ def set_leaves(request):
         with connection.cursor() as cursor:
             # INSERT dans users_table
             cursor.execute("""
-                INSERT INTO leaves (employee_id,employee_function,leave_type,start_date,end_date,duration,workflow,priority,leave_status)
+                INSERT INTO leaves (employee_id,employee_function,leave_type,start_date,end_date,duration,workflow,job_type_id,leave_status)
                 VALUES (%s, %s, %s, %s, %s, %s, %s,%s, %s)
                 RETURNING id;
-            """, [employee_id,employee_function,leave_type,start_date,end_date,duration,workflow,priority,leave_status])
+            """, [employee_id,employee_function,leave_type,start_date,end_date,duration,workflow,job_type_id,leave_status])
 
             employee_id = cursor.fetchone()[0]
            
@@ -338,11 +338,11 @@ def get_leaves(request):
 def request_recruitment(request):
     data = request.data
     job_type = data.get("job_type")
-    request_service_id = data.get("request_service_id")
+    service_id = data.get("service_id")
     job_title_id = data.get("job_title_id")
-    priority = data.get("priority")
-    #status = data.get("status")
+    job_type_id = data.get("job_type_id")
     salary = data.get("salary")
+    priority = data.get("priority")
     needs = data.get("needs")
     skills = data.get("skills")
     created_at = datetime.datetime.now() 
@@ -350,7 +350,7 @@ def request_recruitment(request):
     updated_at = datetime.datetime.now()
     formatted_updated_at = updated_at.strftime("%Y-%m-%d %H:%M:%S")
 
-    #if not all([job_type,job_title_id, salary, request_service_id, needs, skills, priority]):
+    #if not all([job_type,job_type_id, priority, request_service_id, needs, skills, job_type_id]):
     #    return Response({"status": "error", "message": "Tous les champs sont requis"},
     #                    status=status.HTTP_400_BAD_REQUEST)  
 
@@ -358,17 +358,17 @@ def request_recruitment(request):
         with connection.cursor() as cursor:
             # INSERT dans users_table
             cursor.execute("""
-                INSERT INTO recruitment_requests (job_type,request_service_id,job_title_id,priority,salary,needs,skills,created_at,updated_at)
-                VALUES (%s, %s, %s, %s, %s, %s,%s,%s,%s)
+                INSERT INTO recruitment_requests (service_id,job_title_id,job_type_id,priority,salary,needs,skills,created_at,updated_at)
+                VALUES (%s, %s, %s, %s, %s, %s,%s,%s, %s)
                 RETURNING id;
-            """, [job_title_id, request_service_id, job_type,salary, skills, needs,priority,formatted_created_at,formatted_updated_at])
+            """, [service_id,job_title_id,job_type_id,priority, salary,needs,skills,formatted_created_at,formatted_updated_at])
 
             id = cursor.fetchone()[0]
            
 
             return Response({
                 "status": "ok",
-                "message": f"Requête de recrutement {job_title_id} envoyée dans avec succès"
+                "message": f"Requête de recrutement {job_type_id} envoyée dans avec succès"
             })
     
     except IntegrityError as e:
@@ -404,10 +404,10 @@ def edit_recruitment(request):
     data = request.data
     job_type = data.get("job_type")
     request_service_id = data.get("request_service_id")
-    job_title_id = data.get("job_title_id")
-    priority = data.get("priority")
+    job_type_id = data.get("job_type_id")
+    job_type_id = data.get("job_type_id")
     #status = data.get("status")
-    salary = data.get("salary")
+    priority = data.get("priority")
     needs = data.get("needs")
     skills = data.get("skills")
     created_at = datetime.datetime.now() 
@@ -415,7 +415,7 @@ def edit_recruitment(request):
     updated_at = datetime.datetime.now()
     formatted_updated_at = updated_at.strftime("%Y-%m-%d %H:%M:%S")
 
-    if not all([salary, request_service_id, needs, skills, priority]):
+    if not all([priority, request_service_id, needs, skills, job_type_id]):
         return Response({"status": "error", "message": "Tous les champs sont requis"},
                         status=status.HTTP_400_BAD_REQUEST)  
 
@@ -423,17 +423,17 @@ def edit_recruitment(request):
         with connection.cursor() as cursor:
             # INSERT dans users_table
             cursor.execute("""
-                INSERT INTO recruitment_requests(job_type,request_service_id, job_title_id, priority, salary, needs, skills) 
+                INSERT INTO recruitment_requests(job_type,request_service_id, job_type_id, job_type_id, priority, needs, skills) 
                                         VALUES (%s, %s, %s, %s, %s, %s,%s,%s,%s)
                 RETURNING id;
-            """, [job_type,request_service_id,job_title_id,priority,salary,needs,skills,formatted_created_at,formatted_updated_at])
+            """, [job_type,request_service_id,job_type_id,job_type_id,priority,needs,skills,formatted_created_at,formatted_updated_at])
 
             id = cursor.fetchone()[0]
            
 
             return Response({
                 "status": "ok",
-                "message": f"Requête de recrutement {job_title_id} envoyée dans avec succès"
+                "message": f"Requête de recrutement {job_type_id} envoyée dans avec succès"
             })
     
     except IntegrityError as e:
@@ -548,7 +548,7 @@ def create_employee(request):
     employment_type_field = data.get("employment_type")  # CDI, CDD, Intérim
     hire_date = data.get("hire_date")
     rattached_service = data.get("rattached_service", "")
-    base_salary = data.get("base_salary")
+    base_priority = data.get("base_priority")
     bonuses = data.get("bonuses", "")
     probation_period = data.get("probation_period")
     occupied_role = data.get("occupied_role")
@@ -588,7 +588,7 @@ def create_employee(request):
                  job_type, diploma,certificate_file, additional_training, professional_certificate,
                  spoken_languages, language_level,
                  current_position, company, start_date, end_date, moral_reference, portfolio_file,
-                 employment_type_field, hire_date, rattached_service, occupied_role, base_salary, bonuses, probation_period)
+                 employment_type_field, hire_date, rattached_service, occupied_role, base_priority, bonuses, probation_period)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 
                         %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 
                         %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
@@ -599,7 +599,7 @@ def create_employee(request):
                  job_type, diploma, certificate_file, additional_training, professional_certificate,
                  spoken_languages, language_level, current_position, company, start_date, 
                  end_date, moral_reference, portfolio_file, employment_type_field, hire_date, 
-                 occupied_role,rattached_service, base_salary, bonuses, probation_period
+                 occupied_role,rattached_service, base_priority, bonuses, probation_period
                 ]
             )
             new_id = cursor.fetchone()[0]
