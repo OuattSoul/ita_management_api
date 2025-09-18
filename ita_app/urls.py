@@ -1,11 +1,11 @@
 from rest_framework.routers import DefaultRouter
-from .views import UserViewSet,EmployeeViewSet,RecruitmentRequestViewSet,JobTitleViewSet
+from .views import UserViewSet,EmployeeViewSet,RecruitmentRequestViewSet,JobTitleViewSet,EmployeeAttendanceViewSet
 
 router = DefaultRouter()
 router.register(r'api/users', UserViewSet, basename='user')
 router.register(r'api/employees', EmployeeViewSet, basename='employee')
 router.register(r'api/recruitments', RecruitmentRequestViewSet, basename='recruitment')
 router.register(r'api/jobs', JobTitleViewSet, basename='job-title')
-
+router.register(r'api/employee_attendance', EmployeeAttendanceViewSet, basename='attendance')
 
 urlpatterns = router.urls
