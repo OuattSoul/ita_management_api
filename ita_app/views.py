@@ -804,7 +804,77 @@ def create_user(request):
     except Exception as e:
         return Response({"status": "error", "message": str(e)}, status=500)
 
+@api_view(["GET"])
+def get_user_by_id(request, user_id):
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT u.id,
+                       u.email_prof,
+                       u.hire_date,
+                       u.profile_status,
+                       u.created_at,
+                       u.updated_at,
+                       ur.id AS user_role_id,
+                       ur.role_name AS user_role_name,
+                       e.id AS employee_id,
+                       e.matricule,
+                       e.full_name AS employee_name,
+                       f.id AS function_id,
+                       f.name AS function_name,
+                       s.id AS service_id,
+                       s.name AS service_name,
+                       s.chief AS service_chief,
+                       jt.id AS job_type_id,
+                       jt.type_name AS job_type_name
+                FROM users u
+                JOIN user_roles ur ON u.user_role_id = ur.id
+                JOIN employees e ON u.user_id = e.id
+                JOIN functions f ON u.employee_function_id = f.id
+                JOIN request_service s ON u.affected_at_service_id = s.id
+                JOIN job_types jt ON u.job_type_id = jt.id
+                WHERE u.id = %s;
+            """, [user_id])
 
+            row = cursor.fetchone()
+            if not row:
+                return Response({"status": "error", "message": "Utilisateur non trouvé"}, status=404)
+
+            user_data = {
+                "id": row[0],
+                "email_prof": row[1],
+                "hire_date": row[2],
+                "profile_status": row[3],
+                "created_at": row[4],
+                "updated_at": row[5],
+                "user_role": {
+                    "id": row[6],
+                    "role_name": row[7]
+                },
+                "employee": {
+                    "id": row[8],
+                    "matricule": row[9],
+                    "full_name": row[10]
+                },
+                "function": {
+                    "id": row[11],
+                    "name": row[12]
+                },
+                "service": {
+                    "id": row[13],
+                    "name": row[14],
+                    "chief": row[15]
+                },
+                "job_type": {
+                    "id": row[16],
+                    "type_name": row[17]
+                }
+            }
+
+        return Response({"status": "ok", "user": user_data})
+
+    except Exception as e:
+        return Response({"status": "error", "message": str(e)}, status=500)
 
 
 
