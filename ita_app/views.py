@@ -231,7 +231,6 @@ class UserViewSet(viewsets.ViewSet):
         except Exception as e:
             return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
 class EmployeeViewSet(viewsets.ViewSet):
     """
     ViewSet CRUD complet pour la table 'employees' via SQL direct.
@@ -309,47 +308,60 @@ class EmployeeViewSet(viewsets.ViewSet):
             profil_status = data.get("profil_status")
             password = data.get("password")
             email_pro = data.get("email_pro")
-            created_at = datetime.datetime.now()
-            updated_at = datetime.datetime.now()
             job_type_id = data.get("job_type_id")
 
-            if not all([matricule, full_name, job_title_id, service_id,hire_date,email_pro]):
+            if not all([matricule, full_name, job_title_id, service_id, hire_date, email_pro]):
                 return Response({"status": "error", "message": "Champs obligatoires manquants"}, status=status.HTTP_400_BAD_REQUEST)
 
-            created_at = updated_at = datetime.datetime.now()
+            hashed_password = make_password(password)
 
-            hashed_password = make_password(password)  # hachage sécurisé
-            # Générer un code unique
-            access_code = None
-
+            # Générer un code unique pour l'accès
             while True:
-                code = generate_access_code() # encrypt this code
+                access_code = generate_access_code()
                 with connection.cursor() as cursor:
-                    cursor.execute("SELECT 1 FROM employees WHERE access_code = %s", [code])
+                    cursor.execute("SELECT 1 FROM employees WHERE access_code = %s", [access_code])
                     exists = cursor.fetchone()
                 if not exists:
                     hashed_access_code = make_password(access_code)
                     break
 
+            created_at = updated_at = datetime.datetime.now()
+
             with connection.cursor() as cursor:
                 cursor.execute("""
-                    INSERT INTO employees (matricule, full_name, job_title_id, service_id, hire_date,created_at,updated_at,profil_status,password,access_code, email_pro,job_type_id)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s,%s,%s,%s,%s,%s)
+                    INSERT INTO employees (matricule, full_name, job_title_id, service_id, hire_date,
+                                        created_at, updated_at, profil_status, password, access_code,
+                                        email_pro, job_type_id)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id;
-                """, [matricule, full_name, job_title_id, service_id, hire_date, created_at, updated_at,profil_status,hashed_password,hashed_access_code,email_pro,job_type_id])
+                """, [matricule, full_name, job_title_id, service_id, hire_date,
+                    created_at, updated_at, profil_status, hashed_password, hashed_access_code,
+                    email_pro, job_type_id])
                 new_id = cursor.fetchone()[0]
 
-                unplunk_send_email(full_name,email_pro,access_code)
+            # Envoyer le code d'accès par email
+            unplunk_send_email(full_name, email_pro, access_code)
 
-                payload_user = type('UserDummy', (object,), {"id": new_id, "full_name": full_name})
-                refresh = RefreshToken.for_user(payload_user)
-                access_token = str(refresh.access_token)
+            # ✅ Génération du token JWT avec SimpleJWT
+            class DummyUser:
+                """Utilisateur fictif pour SimpleJWT"""
+                def __init__(self, id, full_name):
+                    self.id = id
+                    self.full_name = full_name
 
-            
+            dummy_user = DummyUser(new_id, full_name)
+            refresh = RefreshToken.for_user(dummy_user)
+            access_token = str(refresh.access_token)
+            refresh_token = str(refresh)
 
-            return Response({"status": "success", "message": "Employé créé avec succès", "employee_id": new_id}, status=status.HTTP_201_CREATED)
-        except Exception as e:
-            return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                "status": "success",
+                "message": "Employé créé avec succès",
+                "employee_id": new_id,
+                "access_token": access_token,
+                "refresh_token": refresh_token
+            }, status=status.HTTP_201_CREATED)
+
         except Exception as e:
             return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -864,9 +876,331 @@ class EmployeeAttendanceViewSet(viewsets.ViewSet):
             return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+class MissionViewSet(viewsets.ViewSet):
+    """CRUD complet pour la table missions"""
 
+    def list(self, request):
+        """GET /missions/ → récupérer toutes les missions"""
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT id, req_id, req_service, project_zone, people_required,
+                           priority, deadline, mission_status
+                    FROM missions
+                    ORDER BY id;
+                """)
+                rows = cursor.fetchall()
+                result = []
+                for row in rows:
+                    result.append({
+                        "id": row[0],
+                        "req_id": row[1],
+                        "req_service": row[2],
+                        "project_zone": row[3],
+                        "people_required": row[4],
+                        "priority": row[5],
+                        "deadline": row[6].isoformat() if row[6] else None,
+                        "mission_status": row[7]
+                    })
+            return Response({"status": "success", "data": result})
+        except Exception as e:
+            return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    def retrieve(self, request, pk=None):
+        """GET /missions/{id}/ → récupérer une mission"""
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT id, req_id, req_service, project_zone, people_required,
+                           priority, deadline, mission_status
+                    FROM missions
+                    WHERE id = %s;
+                """, [pk])
+                row = cursor.fetchone()
+                if not row:
+                    return Response({"status": "error", "message": "Mission not found"}, status=status.HTTP_404_NOT_FOUND)
+                mission = {
+                    "id": row[0],
+                    "req_id": row[1],
+                    "req_service": row[2],
+                    "project_zone": row[3],
+                    "people_required": row[4],
+                    "priority": row[5],
+                    "deadline": row[6].isoformat() if row[6] else None,
+                    "mission_status": row[7]
+                }
+            return Response({"status": "success", "data": mission})
+        except Exception as e:
+            return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    def create(self, request):
+        """POST /missions/ → créer une mission"""
+        data = request.data
+        try:
+            req_id = data.get("req_id")
+            req_service = data.get("req_service")
+            project_zone = data.get("project_zone")
+            people_required = data.get("people_required")
+            priority = data.get("priority")
+            deadline = data.get("deadline")
+            mission_status = data.get("mission_status")
+
+            if not all([req_id, req_service, project_zone, people_required, priority, deadline, mission_status]):
+                return Response({"status": "error", "message": "Champs obligatoires manquants"}, status=status.HTTP_400_BAD_REQUEST)
+
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO missions (req_id, req_service, project_zone, people_required, priority, deadline, mission_status)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    RETURNING id;
+                """, [req_id, req_service, project_zone, people_required, priority, deadline, mission_status])
+                new_id = cursor.fetchone()[0]
+
+            return Response({"status": "success", "message": "Mission créée", "id": new_id}, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def update(self, request, pk=None):
+        """PUT /missions/{id}/ → mise à jour complète"""
+        data = request.data
+        try:
+            req_id = data.get("req_id")
+            req_service = data.get("req_service")
+            project_zone = data.get("project_zone")
+            people_required = data.get("people_required")
+            priority = data.get("priority")
+            deadline = data.get("deadline")
+            mission_status = data.get("mission_status")
+
+            if not all([req_id, req_service, project_zone, people_required, priority, deadline, mission_status]):
+                return Response({"status": "error", "message": "Champs obligatoires manquants"}, status=status.HTTP_400_BAD_REQUEST)
+
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    UPDATE missions
+                    SET req_id=%s, req_service=%s, project_zone=%s, people_required=%s,
+                        priority=%s, deadline=%s, mission_status=%s
+                    WHERE id=%s
+                    RETURNING id;
+                """, [req_id, req_service, project_zone, people_required, priority, deadline, mission_status, pk])
+                row = cursor.fetchone()
+                if not row:
+                    return Response({"status": "error", "message": "Mission not found"}, status=status.HTTP_404_NOT_FOUND)
+
+            return Response({"status": "success", "message": "Mission mise à jour", "id": pk})
+        except Exception as e:
+            return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def partial_update(self, request, pk=None):
+        """PATCH /missions/{id}/ → mise à jour partielle"""
+        data = request.data
+        try:
+            set_clauses = []
+            values = []
+            for field in ["req_id", "req_service", "project_zone", "people_required", "priority", "deadline", "mission_status"]:
+                if field in data:
+                    set_clauses.append(f"{field}=%s")
+                    values.append(data[field])
+
+            if not set_clauses:
+                return Response({"status": "error", "message": "Aucun champ à mettre à jour"}, status=status.HTTP_400_BAD_REQUEST)
+
+            values.append(pk)
+            with connection.cursor() as cursor:
+                cursor.execute(f"""
+                    UPDATE missions
+                    SET {', '.join(set_clauses)}
+                    WHERE id=%s
+                    RETURNING id;
+                """, values)
+                row = cursor.fetchone()
+                if not row:
+                    return Response({"status": "error", "message": "Mission not found"}, status=status.HTTP_404_NOT_FOUND)
+
+            return Response({"status": "success", "message": "Mission partiellement mise à jour", "id": pk})
+        except Exception as e:
+            return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def destroy(self, request, pk=None):
+        """DELETE /missions/{id}/ → supprimer une mission"""
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("DELETE FROM missions WHERE id=%s RETURNING id;", [pk])
+                row = cursor.fetchone()
+                if not row:
+                    return Response({"status": "error", "message": "Mission not found"}, status=status.HTTP_404_NOT_FOUND)
+
+            return Response({"status": "success", "message": "Mission supprimée", "id": pk})
+        except Exception as e:
+            return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class LeaveViewSet(viewsets.ViewSet):
+    """CRUD complet pour la table leaves"""
+
+    def list(self, request):
+        """GET /leaves/ → récupérer toutes les demandes de congés"""
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT id, employee_name, employee_function, leave_type, start_date, end_date, duration,
+                           workflow, priority, leave_status
+                    FROM leaves
+                    ORDER BY id;
+                """)
+                rows = cursor.fetchall()
+                result = []
+                for row in rows:
+                    result.append({
+                        "id": row[0],
+                        "employee_name": row[1],
+                        "employee_function": row[2],
+                        "leave_type": row[3],
+                        "start_date": row[4].isoformat() if row[4] else None,
+                        "end_date": row[5].isoformat() if row[5] else None,
+                        "duration": row[6],
+                        "workflow": row[7],
+                        "priority": row[8],
+                        "leave_status": row[9],
+                    })
+            return Response({"status": "success", "data": result})
+        except Exception as e:
+            return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def retrieve(self, request, pk=None):
+        """GET /leaves/{id}/ → récupérer une demande de congé"""
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT id, employee_name, employee_function, leave_type, start_date, end_date, duration,
+                           workflow, priority, leave_status
+                    FROM leaves
+                    WHERE id = %s;
+                """, [pk])
+                row = cursor.fetchone()
+                if not row:
+                    return Response({"status": "error", "message": "Leave request not found"}, status=status.HTTP_404_NOT_FOUND)
+                leave = {
+                    "id": row[0],
+                    "employee_name": row[1],
+                    "employee_function": row[2],
+                    "leave_type": row[3],
+                    "start_date": row[4].isoformat() if row[4] else None,
+                    "end_date": row[5].isoformat() if row[5] else None,
+                    "duration": row[6],
+                    "workflow": row[7],
+                    "priority": row[8],
+                    "leave_status": row[9],
+                }
+            return Response({"status": "success", "data": leave})
+        except Exception as e:
+            return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def create(self, request):
+        """POST /leaves/ → créer une demande de congé"""
+        data = request.data
+        try:
+            employee_name = data.get("employee_name")
+            employee_function = data.get("employee_function")
+            leave_type = data.get("leave_type")
+            start_date = data.get("start_date")
+            end_date = data.get("end_date")
+            duration = data.get("duration")
+            workflow = data.get("workflow")
+            priority = data.get("priority")
+            leave_status = data.get("leave_status")
+
+            if not all([employee_name, employee_function, leave_type, workflow, priority, leave_status]):
+                return Response({"status": "error", "message": "Champs obligatoires manquants"}, status=status.HTTP_400_BAD_REQUEST)
+
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO leaves (employee_name, employee_function, leave_type, start_date, end_date, duration,
+                                        workflow, priority, leave_status)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    RETURNING id;
+                """, [employee_name, employee_function, leave_type, start_date, end_date, duration, workflow, priority, leave_status])
+                new_id = cursor.fetchone()[0]
+
+            return Response({"status": "success", "message": "Leave request created", "id": new_id}, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def update(self, request, pk=None):
+        """PUT /leaves/{id}/ → mise à jour complète"""
+        data = request.data
+        try:
+            employee_name = data.get("employee_name")
+            employee_function = data.get("employee_function")
+            leave_type = data.get("leave_type")
+            start_date = data.get("start_date")
+            end_date = data.get("end_date")
+            duration = data.get("duration")
+            workflow = data.get("workflow")
+            priority = data.get("priority")
+            leave_status = data.get("leave_status")
+
+            if not all([employee_name, employee_function, leave_type, workflow, priority, leave_status]):
+                return Response({"status": "error", "message": "Champs obligatoires manquants"}, status=status.HTTP_400_BAD_REQUEST)
+
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    UPDATE leaves
+                    SET employee_name=%s, employee_function=%s, leave_type=%s, start_date=%s, end_date=%s, duration=%s,
+                        workflow=%s, priority=%s, leave_status=%s
+                    WHERE id=%s
+                    RETURNING id;
+                """, [employee_name, employee_function, leave_type, start_date, end_date, duration, workflow, priority, leave_status, pk])
+                row = cursor.fetchone()
+                if not row:
+                    return Response({"status": "error", "message": "Leave request not found"}, status=status.HTTP_404_NOT_FOUND)
+
+            return Response({"status": "success", "message": "Leave request updated", "id": pk})
+        except Exception as e:
+            return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def partial_update(self, request, pk=None):
+        """PATCH /leaves/{id}/ → mise à jour partielle"""
+        data = request.data
+        try:
+            set_clauses = []
+            values = []
+            for field in ["employee_name", "employee_function", "leave_type", "start_date", "end_date", "duration",
+                          "workflow", "priority", "leave_status"]:
+                if field in data:
+                    set_clauses.append(f"{field}=%s")
+                    values.append(data[field])
+
+            if not set_clauses:
+                return Response({"status": "error", "message": "Aucun champ à mettre à jour"}, status=status.HTTP_400_BAD_REQUEST)
+
+            values.append(pk)
+            with connection.cursor() as cursor:
+                cursor.execute(f"""
+                    UPDATE leaves
+                    SET {', '.join(set_clauses)}
+                    WHERE id=%s
+                    RETURNING id;
+                """, values)
+                row = cursor.fetchone()
+                if not row:
+                    return Response({"status": "error", "message": "Leave request not found"}, status=status.HTTP_404_NOT_FOUND)
+
+            return Response({"status": "success", "message": "Leave request partially updated", "id": pk})
+        except Exception as e:
+            return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def destroy(self, request, pk=None):
+        """DELETE /leaves/{id}/ → supprimer une demande de congé"""
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("DELETE FROM leaves WHERE id=%s RETURNING id;", [pk])
+                row = cursor.fetchone()
+                if not row:
+                    return Response({"status": "error", "message": "Leave request not found"}, status=status.HTTP_404_NOT_FOUND)
+
+            return Response({"status": "success", "message": "Leave request deleted", "id": pk})
+        except Exception as e:
+            return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 
