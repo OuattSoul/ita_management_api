@@ -1105,7 +1105,7 @@ class LeaveViewSet(viewsets.ViewSet):
             leave_type = data.get("leave_type")
             start_date = data.get("start_date")
             end_date = data.get("end_date")
-            duration = data.get("duration")
+            #duration = data.get("duration")
             workflow = data.get("workflow")
             priority = data.get("priority")
             leave_status = data.get("leave_status")
@@ -1119,7 +1119,7 @@ class LeaveViewSet(viewsets.ViewSet):
                                         workflow, priority, leave_status)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id;
-                """, [employee_id, leave_type, start_date, end_date, duration, workflow, priority, leave_status])
+                """, [employee_id, leave_type, start_date, end_date, workflow, priority, leave_status])
                 new_id = cursor.fetchone()[0]
 
             return Response({"status": "success", "message": "Leave request created", "id": new_id}, status=status.HTTP_201_CREATED)
@@ -1134,7 +1134,7 @@ class LeaveViewSet(viewsets.ViewSet):
             leave_type = data.get("leave_type")
             start_date = data.get("start_date")
             end_date = data.get("end_date")
-            duration = data.get("duration")
+            #duration = data.get("duration")
             workflow = data.get("workflow")
             priority = data.get("priority")
             leave_status = data.get("leave_status")
@@ -1149,7 +1149,7 @@ class LeaveViewSet(viewsets.ViewSet):
                         workflow=%s, priority=%s, leave_status=%s
                     WHERE id=%s
                     RETURNING id;
-                """, [employee_id, leave_type, start_date, end_date, duration, workflow, priority, leave_status, pk])
+                """, [employee_id, leave_type, start_date, end_date, workflow, priority, leave_status, pk])
                 row = cursor.fetchone()
                 if not row:
                     return Response({"status": "error", "message": "Leave request not found"}, status=status.HTTP_404_NOT_FOUND)
@@ -1164,7 +1164,7 @@ class LeaveViewSet(viewsets.ViewSet):
         try:
             set_clauses = []
             values = []
-            for field in ["employee_id","leave_type", "start_date", "end_date", "duration",
+            for field in ["employee_id","leave_type", "start_date", "end_date",
                           "workflow", "priority", "leave_status"]:
                 if field in data:
                     set_clauses.append(f"{field}=%s")
