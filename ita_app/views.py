@@ -1045,7 +1045,7 @@ class LeaveViewSet(viewsets.ViewSet):
         try:
             with connection.cursor() as cursor:
                 cursor.execute("""
-                    SELECT id, employee_name, employee_function, leave_type, start_date, end_date, duration,
+                    SELECT id, employee_id, leave_type, start_date, end_date, duration,
                            workflow, priority, leave_status
                     FROM leaves
                     ORDER BY id;
@@ -1055,15 +1055,14 @@ class LeaveViewSet(viewsets.ViewSet):
                 for row in rows:
                     result.append({
                         "id": row[0],
-                        "employee_name": row[1],
-                        "employee_function": row[2],
+                        "employee_id": row[1],
+                        "leave_status": row[2],
                         "leave_type": row[3],
                         "start_date": row[4].isoformat() if row[4] else None,
                         "end_date": row[5].isoformat() if row[5] else None,
                         "duration": row[6],
                         "workflow": row[7],
-                        "priority": row[8],
-                        "leave_status": row[9],
+                        "priority": row[8]
                     })
             return Response({"status": "success", "data": result})
         except Exception as e:
@@ -1074,7 +1073,7 @@ class LeaveViewSet(viewsets.ViewSet):
         try:
             with connection.cursor() as cursor:
                 cursor.execute("""
-                    SELECT id, employee_name, employee_function, leave_type, start_date, end_date, duration,
+                    SELECT id, employee_id, leave_type, start_date, end_date, duration,
                            workflow, priority, leave_status
                     FROM leaves
                     WHERE id = %s;
@@ -1084,15 +1083,14 @@ class LeaveViewSet(viewsets.ViewSet):
                     return Response({"status": "error", "message": "Leave request not found"}, status=status.HTTP_404_NOT_FOUND)
                 leave = {
                     "id": row[0],
-                    "employee_name": row[1],
+                    "leave_status": row[1],
                     "employee_function": row[2],
                     "leave_type": row[3],
                     "start_date": row[4].isoformat() if row[4] else None,
                     "end_date": row[5].isoformat() if row[5] else None,
                     "duration": row[6],
                     "workflow": row[7],
-                    "priority": row[8],
-                    "leave_status": row[9],
+                    "priority": row[8]
                 }
             return Response({"status": "success", "data": leave})
         except Exception as e:
@@ -1102,8 +1100,7 @@ class LeaveViewSet(viewsets.ViewSet):
         """POST /leaves/ → créer une demande de congé"""
         data = request.data
         try:
-            employee_name = data.get("employee_name")
-            employee_function = data.get("employee_function")
+            employee_id = data.get("employee_id")
             leave_type = data.get("leave_type")
             start_date = data.get("start_date")
             end_date = data.get("end_date")
@@ -1112,16 +1109,16 @@ class LeaveViewSet(viewsets.ViewSet):
             priority = data.get("priority")
             leave_status = data.get("leave_status")
 
-            if not all([employee_name, employee_function, leave_type, workflow, priority, leave_status]):
+            if not all([employee_id, leave_type, workflow, priority, leave_status]):
                 return Response({"status": "error", "message": "Champs obligatoires manquants"}, status=status.HTTP_400_BAD_REQUEST)
 
             with connection.cursor() as cursor:
                 cursor.execute("""
-                    INSERT INTO leaves (employee_name, employee_function, leave_type, start_date, end_date, duration,
+                    INSERT INTO leaves (employee_id, leave_type, start_date, end_date, duration,
                                         workflow, priority, leave_status)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id;
-                """, [employee_name, employee_function, leave_type, start_date, end_date, duration, workflow, priority, leave_status])
+                """, [employee_id, leave_type, start_date, end_date, duration, workflow, priority, leave_status])
                 new_id = cursor.fetchone()[0]
 
             return Response({"status": "success", "message": "Leave request created", "id": new_id}, status=status.HTTP_201_CREATED)
@@ -1132,8 +1129,7 @@ class LeaveViewSet(viewsets.ViewSet):
         """PUT /leaves/{id}/ → mise à jour complète"""
         data = request.data
         try:
-            employee_name = data.get("employee_name")
-            employee_function = data.get("employee_function")
+            employee_id = data.get("employee_id")
             leave_type = data.get("leave_type")
             start_date = data.get("start_date")
             end_date = data.get("end_date")
@@ -1142,17 +1138,17 @@ class LeaveViewSet(viewsets.ViewSet):
             priority = data.get("priority")
             leave_status = data.get("leave_status")
 
-            if not all([employee_name, employee_function, leave_type, workflow, priority, leave_status]):
+            if not all([employee_id, leave_type, workflow, priority, leave_status]):
                 return Response({"status": "error", "message": "Champs obligatoires manquants"}, status=status.HTTP_400_BAD_REQUEST)
 
             with connection.cursor() as cursor:
                 cursor.execute("""
                     UPDATE leaves
-                    SET employee_name=%s, employee_function=%s, leave_type=%s, start_date=%s, end_date=%s, duration=%s,
+                    SET employee_id=%s, leave_type=%s, start_date=%s, end_date=%s, duration=%s,
                         workflow=%s, priority=%s, leave_status=%s
                     WHERE id=%s
                     RETURNING id;
-                """, [employee_name, employee_function, leave_type, start_date, end_date, duration, workflow, priority, leave_status, pk])
+                """, [employee_id, leave_type, start_date, end_date, duration, workflow, priority, leave_status, pk])
                 row = cursor.fetchone()
                 if not row:
                     return Response({"status": "error", "message": "Leave request not found"}, status=status.HTTP_404_NOT_FOUND)
@@ -1167,7 +1163,7 @@ class LeaveViewSet(viewsets.ViewSet):
         try:
             set_clauses = []
             values = []
-            for field in ["employee_name", "employee_function", "leave_type", "start_date", "end_date", "duration",
+            for field in ["employee_id","leave_type", "start_date", "end_date", "duration",
                           "workflow", "priority", "leave_status"]:
                 if field in data:
                     set_clauses.append(f"{field}=%s")
