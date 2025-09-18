@@ -5,6 +5,7 @@ from django.db import connection
 from django.db.utils import IntegrityError
 from django.contrib.auth.hashers import make_password
 import datetime, resend, requests, random
+from rest_framework_simplejwt.tokens import RefreshToken
 
 def generate_access_code():
     """Génère un code d'accès unique à 4 chiffres."""
@@ -258,7 +259,8 @@ class EmployeeViewSet(viewsets.ViewSet):
                         "hire_date": row[5],
                         "created_at": row[6],
                         "updated_at": row[7],
-                        "profil_status" : row[8]
+                        "profil_status" : row[8],
+                        "user_email" : row[9]
                     })
             return Response({"status": "success", "employees": employees})
         except Exception as e:
@@ -270,7 +272,7 @@ class EmployeeViewSet(viewsets.ViewSet):
             with connection.cursor() as cursor:
                 cursor.execute("""
                     SELECT id, matricule, full_name, job_title_id, service_id, hire_date,
-                           created_at, updated_at,profil_status
+                           created_at, updated_at,profil_status,user_email
                     FROM employees
                     WHERE id = %s;
                 """, [pk])
@@ -287,7 +289,9 @@ class EmployeeViewSet(viewsets.ViewSet):
                     "hire_date": row[5],
                     "created_at": row[6],
                     "updated_at": row[7],
-                    "profil_status": row[8]
+                    "profil_status": row[8],
+                    "user_email": row[9],
+                    "job_type_id" : row[10]
                 }
             return Response({"status": "success", "employee": employee})
         except Exception as e:
@@ -304,8 +308,12 @@ class EmployeeViewSet(viewsets.ViewSet):
             hire_date = data.get("hire_date")
             profil_status = data.get("profil_status")
             password = data.get("password")
+            user_email = data.get("user_email")
+            created_at = datetime.datetime.datetime.now()
+            updated_at = datetime.datetime.datetime.now()
+            job_type_id = data.get("job_type_id")
 
-            if not all([matricule, full_name, job_title_id, service_id]):
+            if not all([matricule, full_name, job_title_id, service_id,hire_date,user_email]):
                 return Response({"status": "error", "message": "Champs obligatoires manquants"}, status=status.HTTP_400_BAD_REQUEST)
 
             created_at = updated_at = datetime.datetime.now()
@@ -317,7 +325,7 @@ class EmployeeViewSet(viewsets.ViewSet):
             while True:
                 code = generate_access_code() # encrypt this code
                 with connection.cursor() as cursor:
-                    cursor.execute("SELECT 1 FROM staffs WHERE access_code = %s", [code])
+                    cursor.execute("SELECT 1 FROM employees WHERE access_code = %s", [code])
                     exists = cursor.fetchone()
                 if not exists:
                     hashed_access_code = make_password(access_code)
@@ -325,11 +333,19 @@ class EmployeeViewSet(viewsets.ViewSet):
 
             with connection.cursor() as cursor:
                 cursor.execute("""
-                    INSERT INTO employees (matricule, full_name, job_title_id, service_id, hire_date, created_at, updated_at,profil_status,password,access_code)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s,%s,%s,%s)
+                    INSERT INTO employees (matricule, full_name, job_title_id, service_id, hire_date,,created_at,updated_at,profil_status,password,access_code, user_email,job_type_id)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s,%s,%s,%s,%s,%s)
                     RETURNING id;
-                """, [matricule, full_name, job_title_id, service_id, hire_date, created_at, updated_at,profil_status,hashed_password,hashed_access_code])
+                """, [matricule, full_name, job_title_id, service_id, hire_date, created_at, updated_at,profil_status,hashed_password,hashed_access_code,user_email,job_type_id])
                 new_id = cursor.fetchone()[0]
+
+                unplunk_send_email(full_name,user_email,access_code)
+
+                payload_user = type('UserDummy', (object,), {"id": new_id, "full_name": full_name})
+                refresh = RefreshToken.for_user(payload_user)
+                access_token = str(refresh.access_token)
+
+            
 
             return Response({"status": "success", "message": "Employé créé avec succès", "employee_id": new_id}, status=status.HTTP_201_CREATED)
         except IntegrityError as e:
@@ -633,7 +649,76 @@ class RecruitmentRequestViewSet(viewsets.ViewSet):
 
 
 
+class JobTitleViewSet(viewsets.ViewSet):
+    """
+    CRUD complet pour la table job_title via SQL direct
+    """
 
+    def list(self, request):
+        """GET /job-titles/ → Liste des job titles"""
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT id, name FROM job_title ORDER BY id ASC;")
+                rows = cursor.fetchall()
+                data = [{"id": row[0], "name": row[1]} for row in rows]
+            return Response(data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    def retrieve(self, request, pk=None):
+        """GET /job-titles/{id}/ → Récupérer un job title"""
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT id, name FROM job_title WHERE id = %s;", [pk])
+                row = cursor.fetchone()
+                if not row:
+                    return Response({"error": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+                data = {"id": row[0], "name": row[1]}
+            return Response(data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    def create(self, request):
+        """POST /job-titles/ → Créer un job title"""
+        name = request.data.get("name")
+        if not name:
+            return Response({"error": "Le champ 'name' est requis"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("INSERT INTO job_title (name) VALUES (%s) RETURNING id;", [name])
+                new_id = cursor.fetchone()[0]
+            return Response({"id": new_id, "name": name}, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    def update(self, request, pk=None):
+        """PUT /job-titles/{id}/ → Modifier un job title"""
+        name = request.data.get("name")
+        if not name:
+            return Response({"error": "Le champ 'name' est requis"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("UPDATE job_title SET name = %s WHERE id = %s RETURNING id;", [name, pk])
+                row = cursor.fetchone()
+                if not row:
+                    return Response({"error": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"id": pk, "name": name}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    def destroy(self, request, pk=None):
+        """DELETE /job-titles/{id}/ → Supprimer un job title"""
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("DELETE FROM job_title WHERE id = %s RETURNING id;", [pk])
+                row = cursor.fetchone()
+                if not row:
+                    return Response({"error": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"message": "Supprimé avec succès"}, status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 
