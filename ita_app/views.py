@@ -250,16 +250,16 @@ class EmployeeViewSet(viewsets.ViewSet):
                 employees = []
                 for row in rows:
                     employees.append({
-                        "job_type_id": row[0],
-                        "matricule": row[1],
-                        "full_name": row[2],
-                        "job_title_id": row[3],
-                        "service_id": row[4],
-                        "hire_date": row[5],
-                        "created_at": row[6],
-                        "updated_at": row[7],
-                        "profil_status" : row[8],
-                        "email_pro" : row[9]
+                        "matricule": row[0],
+                        "full_name": row[1],
+                        "job_title_id": row[2],
+                        "service_id": row[3],
+                        "hire_date": row[4],
+                        "created_at": row[5],
+                        "updated_at": row[6],
+                        "profil_status": row[7],
+                        "email_pro": row[8],
+                        "job_type_id" : row[9]
 
                     })
             return Response({"status": "success", "employees": employees})
@@ -271,7 +271,7 @@ class EmployeeViewSet(viewsets.ViewSet):
         try:
             with connection.cursor() as cursor:
                 cursor.execute("""
-                    SELECT id, matricule, full_name, job_title_id, service_id, hire_date,
+                    SELECT matricule, full_name, job_title_id, service_id, hire_date,
                            created_at, updated_at,profil_status,email_pro, job_type_id
                     FROM employees
                     WHERE id = %s;
@@ -281,17 +281,17 @@ class EmployeeViewSet(viewsets.ViewSet):
                     return Response({"status": "error", "message": "Employé non trouvé"}, status=status.HTTP_404_NOT_FOUND)
 
                 employee = {
-                    "id": row[0],
-                    "matricule": row[1],
-                    "full_name": row[2],
-                    "job_title_id": row[3],
-                    "service_id": row[4],
-                    "hire_date": row[5],
-                    "created_at": row[6],
-                    "updated_at": row[7],
-                    "profil_status": row[8],
-                    "email_pro": row[9],
-                    "job_type_id" : row[10]
+                    
+                    "matricule": row[0],
+                    "full_name": row[1],
+                    "job_title_id": row[2],
+                    "service_id": row[3],
+                    "hire_date": row[4],
+                    "created_at": row[5],
+                    "updated_at": row[6],
+                    "profil_status": row[7],
+                    "email_pro": row[8],
+                    "job_type_id" : row[9]
                 }
             return Response({"status": "success", "employee": employee})
         except Exception as e:
