@@ -103,8 +103,8 @@ class UserViewSet(viewsets.ViewSet):
             job_type_id = data.get("job_type_id")
             profile_status = data.get("profile_status", "incomplet")
 
-            created_at = datetime.datetime.now()
-            updated_at = datetime.datetime.now()
+            created_at = datetime.datetime.datetime.now()
+            updated_at = datetime.datetime.datetime.now()
 
             required_fields = [user_role_id, user_id, email_prof, job_title_id,
                                affected_at_service_id, hire_date, job_type_id]
@@ -158,7 +158,7 @@ class UserViewSet(viewsets.ViewSet):
         """PUT /users/{id}/ → mettre à jour un utilisateur (toutes les colonnes)"""
         data = request.data
         try:
-            updated_at = datetime.datetime.now()
+            updated_at = datetime.datetime.datetime.now()
             fields = ["user_role_id", "user_id", "email_prof", "job_title_id",
                       "affected_at_service_id", "hire_date", "job_type_id", "profile_status"]
             values = [data.get(f) for f in fields]
@@ -188,7 +188,7 @@ class UserViewSet(viewsets.ViewSet):
         """PATCH /users/{id}/ → mise à jour partielle"""
         data = request.data
         try:
-            updated_at = datetime.datetime.now()
+            updated_at = datetime.datetime.datetime.now()
             set_clauses = []
             values = []
             for key, val in data.items():
@@ -308,7 +308,7 @@ class EmployeeViewSet(viewsets.ViewSet):
             if not all([matricule, full_name, job_title_id, service_id]):
                 return Response({"status": "error", "message": "Champs obligatoires manquants"}, status=status.HTTP_400_BAD_REQUEST)
 
-            created_at = updated_at = datetime.now()
+            created_at = updated_at = datetime.datetime.now()
 
             hashed_password = make_password(password)  # hachage sécurisé
             # Générer un code unique
@@ -353,7 +353,7 @@ class EmployeeViewSet(viewsets.ViewSet):
             if not all([matricule, full_name, job_title_id, service_id]):
                 return Response({"status": "error", "message": "Champs obligatoires manquants pour PUT"}, status=status.HTTP_400_BAD_REQUEST)
 
-            updated_at = datetime.now()
+            updated_at = datetime.datetime.now()
 
             hashed_password = make_password(password)  # hachage sécurisé
 
@@ -378,7 +378,7 @@ class EmployeeViewSet(viewsets.ViewSet):
         """PATCH /employees/{id}/ → mise à jour partielle"""
         data = request.data
         try:
-            updated_at = datetime.now()
+            updated_at = datetime.datetime.now()
             set_clauses = []
             values = []
 
@@ -561,8 +561,8 @@ class RecruitmentRequestViewSet(viewsets.ViewSet):
         end_period = data.get("end_period")
 
         creation_date = datetime.date.today()
-        created_at = datetime.datetime.now()
-        updated_at = datetime.datetime.now()
+        created_at = datetime.datetime.datetime.now()
+        updated_at = datetime.datetime.datetime.now()
 
         try:
             with connection.cursor() as cursor:
@@ -585,7 +585,7 @@ class RecruitmentRequestViewSet(viewsets.ViewSet):
     def update(self, request, pk=None):
         """PUT /recruitments/{id}/ → mise à jour complète"""
         data = request.data
-        updated_at = datetime.datetime.now()
+        updated_at = datetime.datetime.datetime.now()
         fields = ["service_id", "job_title_id", "job_type_id", "priority", "salary", "needs", "skills", "recruitment_status", "end_period"]
         set_clause = []
         values = []
