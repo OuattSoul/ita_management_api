@@ -736,15 +736,15 @@ class JobTitleViewSet(viewsets.ViewSet):
 
 
 class EmployeeAttendanceViewSet(viewsets.ViewSet):
-    """CRUD complet pour la table employee_attendance"""
+    """CRUD complet pour la table presences"""
 
     def list(self, request):
-        """GET /employee_attendance/ → récupérer tous les enregistrements"""
+        """GET /presences/ → récupérer tous les enregistrements"""
         try:
             with connection.cursor() as cursor:
                 cursor.execute("""
                     SELECT id, employee_name, employee_function, site, arrival, departure, time_worked, pointage_status
-                    FROM employee_attendance
+                    FROM presences
                     ORDER BY id;
                 """)
                 rows = cursor.fetchall()
@@ -765,12 +765,12 @@ class EmployeeAttendanceViewSet(viewsets.ViewSet):
             return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def retrieve(self, request, pk=None):
-        """GET /employee_attendance/{id}/ → récupérer un enregistrement"""
+        """GET /presences/{id}/ → récupérer un enregistrement"""
         try:
             with connection.cursor() as cursor:
                 cursor.execute("""
                     SELECT id, employee_name, employee_function, site, arrival, departure, time_worked, pointage_status
-                    FROM employee_attendance
+                    FROM presences
                     WHERE id = %s;
                 """, [pk])
                 row = cursor.fetchone()
@@ -791,7 +791,7 @@ class EmployeeAttendanceViewSet(viewsets.ViewSet):
             return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def create(self, request):
-        """POST /employee_attendance/ → créer un enregistrement"""
+        """POST /presences/ → créer un enregistrement"""
         data = request.data
         try:
             employee_name = data.get("employee_name")
@@ -799,7 +799,7 @@ class EmployeeAttendanceViewSet(viewsets.ViewSet):
             site = data.get("site")
             arrival = data.get("arrival")
             departure = data.get("departure")
-            time_worked = data.get("time_worked")
+            time_worked = departure-arrival
             pointage_status = data.get("pointage_status")
 
             if not all([employee_name, employee_function, site, arrival, departure, pointage_status]):
@@ -807,7 +807,7 @@ class EmployeeAttendanceViewSet(viewsets.ViewSet):
 
             with connection.cursor() as cursor:
                 cursor.execute("""
-                    INSERT INTO employee_attendance
+                    INSERT INTO presences
                     (employee_name, employee_function, site, arrival, departure, time_worked, pointage_status)
                     VALUES (%s, %s, %s, %s, %s, %s, %s)
                     RETURNING id;
@@ -819,7 +819,7 @@ class EmployeeAttendanceViewSet(viewsets.ViewSet):
             return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def update(self, request, pk=None):
-        """PUT /employee_attendance/{id}/ → mise à jour complète"""
+        """PUT /presences/{id}/ → mise à jour complète"""
         data = request.data
         try:
             employee_name = data.get("employee_name")
@@ -835,7 +835,7 @@ class EmployeeAttendanceViewSet(viewsets.ViewSet):
 
             with connection.cursor() as cursor:
                 cursor.execute("""
-                    UPDATE employee_attendance
+                    UPDATE presences
                     SET employee_name=%s, employee_function=%s, site=%s, arrival=%s, departure=%s, time_worked=%s, pointage_status=%s
                     WHERE id=%s
                     RETURNING id;
@@ -849,7 +849,7 @@ class EmployeeAttendanceViewSet(viewsets.ViewSet):
             return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def partial_update(self, request, pk=None):
-        """PATCH /employee_attendance/{id}/ → mise à jour partielle"""
+        """PATCH /presences/{id}/ → mise à jour partielle"""
         data = request.data
         try:
             set_clauses = []
@@ -865,7 +865,7 @@ class EmployeeAttendanceViewSet(viewsets.ViewSet):
             values.append(pk)
             with connection.cursor() as cursor:
                 cursor.execute(f"""
-                    UPDATE employee_attendance
+                    UPDATE presences
                     SET {', '.join(set_clauses)}
                     WHERE id=%s
                     RETURNING id;
