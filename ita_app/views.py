@@ -337,14 +337,17 @@ def get_leaves(request):
 @api_view(["POST"])
 def request_recruitment(request):
     data = request.data
-    job_type = data.get("job_type")
     service_id = data.get("service_id")
+    creation_date = data.get("creation_date")
+    recruitment_status = data.get("recruitment_status")
+    end_period = data.get("end_period")
     job_title_id = data.get("job_title_id")
     job_type_id = data.get("job_type_id")
     salary = data.get("salary")
     priority = data.get("priority")
     needs = data.get("needs")
     skills = data.get("skills")
+    creation_date = datetime.date.today()
     created_at = datetime.datetime.now() 
     formatted_created_at = created_at.strftime("%Y-%m-%d %H:%M:%S")
     updated_at = datetime.datetime.now()
@@ -358,17 +361,65 @@ def request_recruitment(request):
         with connection.cursor() as cursor:
             # INSERT dans users_table
             cursor.execute("""
-                INSERT INTO recruitment_requests (service_id,job_title_id,job_type_id,priority,salary,needs,skills,created_at,updated_at)
-                VALUES (%s, %s, %s, %s, %s, %s,%s,%s, %s)
+                INSERT INTO recruitment_requests (service_id,job_title_id,job_type_id,priority,salary,needs,skills,created_at,updated_at,creation_date,recruitment_status,end_period)
+                VALUES (%s, %s, %s, %s, %s, %s,%s,%s, %s,%s,%s,%s)
                 RETURNING id;
-            """, [service_id,job_title_id,job_type_id,priority, salary,needs,skills,formatted_created_at,formatted_updated_at])
+            """, [service_id,job_title_id,job_type_id,priority, salary,needs,skills,formatted_created_at,formatted_updated_at,creation_date,recruitment_status,end_period])
 
             id = cursor.fetchone()[0]
+
+            cursor.execute("""
+                SELECT rr.id,
+                       rr.priority,
+                       rr.salary,
+                       rr.needs,
+                       rr.skills,
+                       rr.created_at,
+                       rr.updated_at,
+                       s.id AS service_id,
+                       s.name AS service_name,
+                       s.chief AS service_chief,
+                       jt.id AS job_title_id,
+                       jt.title AS job_title,
+                       jty.id AS job_type_id,
+                       jty.type_name AS job_type
+                FROM recruitment_requests rr
+                JOIN request_service s ON rr.service_id = s.id
+                JOIN job_titles jt ON rr.job_title_id = jt.id
+                JOIN job_types jty ON rr.job_type_id = jty.id
+                WHERE rr.id = %s;
+            """, [id])
            
+            recruitment = cursor.fetchone()
 
             return Response({
                 "status": "ok",
-                "message": f"Requête de recrutement {job_type_id} envoyée dans avec succès"
+            "message": "Requête de recrutement envoyée avec succès",
+            "recruitment": {
+                "id": recruitment[0],
+                "priority": recruitment[1],
+                "salary": recruitment[2],
+                "needs": recruitment[3],
+                "skills": recruitment[4],
+                "created_at": recruitment[5],
+                "updated_at": recruitment[6],
+                "creation_date": recruitment[7],
+                "recruitment_status": recruitment[8],
+                "end_date" : recruitment[9],
+                "service": {
+                    "id": recruitment[10],
+                    "name": recruitment[11],
+                    "chief": recruitment[12],
+                },
+                "job_title": {
+                    "id": recruitment[13],
+                    "title": recruitment[14],
+                },
+                "job_type": {
+                    "id": recruitment[15],
+                    "type_name": recruitment[16],
+                }
+            }
             })
     
     except IntegrityError as e:
