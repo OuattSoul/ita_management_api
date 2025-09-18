@@ -242,7 +242,7 @@ class EmployeeViewSet(viewsets.ViewSet):
         try:
             with connection.cursor() as cursor:
                 cursor.execute("""
-                    SELECT matricule, full_name, job_title_id, service_id, hire_date,created_at,updated_at,profil_status,user_email,job_type_id
+                    SELECT matricule, full_name, job_title_id, service_id, hire_date,created_at,updated_at,profil_status,email_pro,job_type_id
                     FROM employees
                     ORDER BY id;
                 """)
@@ -259,7 +259,7 @@ class EmployeeViewSet(viewsets.ViewSet):
                         "created_at": row[6],
                         "updated_at": row[7],
                         "profil_status" : row[8],
-                        "user_email" : row[9],
+                        "email_pro" : row[9],
                         "job_type_id" : row[10]
 
                     })
@@ -273,7 +273,7 @@ class EmployeeViewSet(viewsets.ViewSet):
             with connection.cursor() as cursor:
                 cursor.execute("""
                     SELECT id, matricule, full_name, job_title_id, service_id, hire_date,
-                           created_at, updated_at,profil_status,user_email, job_type_id
+                           created_at, updated_at,profil_status,email_pro, job_type_id
                     FROM employees
                     WHERE id = %s;
                 """, [pk])
@@ -291,7 +291,7 @@ class EmployeeViewSet(viewsets.ViewSet):
                     "created_at": row[6],
                     "updated_at": row[7],
                     "profil_status": row[8],
-                    "user_email": row[9],
+                    "email_pro": row[9],
                     "job_type_id" : row[10]
                 }
             return Response({"status": "success", "employee": employee})
@@ -309,12 +309,12 @@ class EmployeeViewSet(viewsets.ViewSet):
             hire_date = data.get("hire_date")
             profil_status = data.get("profil_status")
             password = data.get("password")
-            user_email = data.get("user_email")
+            email_pro = data.get("email_pro")
             created_at = datetime.datetime.now()
             updated_at = datetime.datetime.now()
             job_type_id = data.get("job_type_id")
 
-            if not all([matricule, full_name, job_title_id, service_id,hire_date,user_email]):
+            if not all([matricule, full_name, job_title_id, service_id,hire_date,email_pro]):
                 return Response({"status": "error", "message": "Champs obligatoires manquants"}, status=status.HTTP_400_BAD_REQUEST)
 
             created_at = updated_at = datetime.datetime.now()
@@ -334,13 +334,13 @@ class EmployeeViewSet(viewsets.ViewSet):
 
             with connection.cursor() as cursor:
                 cursor.execute("""
-                    INSERT INTO employees (matricule, full_name, job_title_id, service_id, hire_date,,created_at,updated_at,profil_status,password,access_code, user_email,job_type_id)
+                    INSERT INTO employees (matricule, full_name, job_title_id, service_id, hire_date,,created_at,updated_at,profil_status,password,access_code, email_pro,job_type_id)
                     VALUES (%s, %s, %s, %s, %s, %s, %s,%s,%s,%s,%s,%s)
                     RETURNING id;
-                """, [matricule, full_name, job_title_id, service_id, hire_date, created_at, updated_at,profil_status,hashed_password,hashed_access_code,user_email,job_type_id])
+                """, [matricule, full_name, job_title_id, service_id, hire_date, created_at, updated_at,profil_status,hashed_password,hashed_access_code,email_pro,job_type_id])
                 new_id = cursor.fetchone()[0]
 
-                unplunk_send_email(full_name,user_email,access_code)
+                unplunk_send_email(full_name,email_pro,access_code)
 
                 payload_user = type('UserDummy', (object,), {"id": new_id, "full_name": full_name})
                 refresh = RefreshToken.for_user(payload_user)
@@ -399,7 +399,7 @@ class EmployeeViewSet(viewsets.ViewSet):
             set_clauses = []
             values = []
 
-            for field in ["matricule", "full_name", "job_title_id", "service_id", "hire_date","profil_status", "password", "access_code"]:
+            for field in ["matricule", "full_name", "job_title_id", "service_id", "hire_date","profil_status","email_pro", "password", "access_code"]:
                 if field in data:
                     set_clauses.append(f"{field}=%s")
                     values.append(data[field])
@@ -646,8 +646,6 @@ class RecruitmentRequestViewSet(viewsets.ViewSet):
             return Response({"status": "ok", "message": "Requête supprimée", "id": pk})
         except Exception as e:
                     return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
 
 
 class JobTitleViewSet(viewsets.ViewSet):
