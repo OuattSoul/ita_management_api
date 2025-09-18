@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import datetime
 from rest_framework.decorators import api_view,permission_classes
 from rest_framework.response import Response
 from rest_framework import status
@@ -344,8 +345,10 @@ def request_recruitment(request):
     salary = data.get("salary")
     needs = data.get("needs")
     skills = data.get("skills")
-    created_at = timezone.now()
-    updated_at = timezone.now()
+    created_at = datetime.datetime.now() 
+    formatted_created_at = created_at.strftime("%Y-%m-%d %H:%M:%S")
+    updated_at = datetime.datetime.now()
+    formatted_updated_at = updated_at.strftime("%Y-%m-%d %H:%M:%S")
 
     if not all([job_type,job_title_id, salary, request_service_id, needs, skills, priority]):
         return Response({"status": "error", "message": "Tous les champs sont requis"},
@@ -358,7 +361,7 @@ def request_recruitment(request):
                 INSERT INTO recruitment_requests (job_type,request_service_id,job_title_id,priority,salary,needs,skills,created_at,updated_at)
                 VALUES (%s, %s, %s, %s, %s, %s,%s,%s,%s)
                 RETURNING id;
-            """, [job_title_id, request_service_id, job_type,salary, skills, needs,priority,created_at,updated_at])
+            """, [job_title_id, request_service_id, job_type,salary, skills, needs,priority,formatted_created_at,formatted_updated_at])
 
             id = cursor.fetchone()[0]
            
