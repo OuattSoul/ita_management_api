@@ -400,8 +400,48 @@ def get_recruitments(request):
         return Response({"status": "error", "message": str(e)}, status=400)
 
 @api_view(["PUT"])
-def edit_recruitment():
-    print("")
+def edit_recruitment(request):
+    data = request.data
+    job_type = data.get("job_type")
+    request_service_id = data.get("request_service_id")
+    job_title_id = data.get("job_title_id")
+    priority = data.get("priority")
+    #status = data.get("status")
+    salary = data.get("salary")
+    needs = data.get("needs")
+    skills = data.get("skills")
+    created_at = datetime.datetime.now() 
+    formatted_created_at = created_at.strftime("%Y-%m-%d %H:%M:%S")
+    updated_at = datetime.datetime.now()
+    formatted_updated_at = updated_at.strftime("%Y-%m-%d %H:%M:%S")
+
+    if not all([job_type,job_title_id, salary, request_service_id, needs, skills, priority]):
+        return Response({"status": "error", "message": "Tous les champs sont requis"},
+                        status=status.HTTP_400_BAD_REQUEST)  
+
+    try:
+        with connection.cursor() as cursor:
+            # INSERT dans users_table
+            cursor.execute("""
+                INSERT INTO recruitment_requests(request_service_id, job_title_id, priority, salary, needs, skills) 
+                                        VALUES (%s, %s, %s, %s, %s, %s,%s,%s,%s)
+                RETURNING id;
+            """, [job_type,request_service_id,job_title_id,priority,salary,needs,skills,formatted_created_at,formatted_updated_at])
+
+            id = cursor.fetchone()[0]
+           
+
+            return Response({
+                "status": "ok",
+                "message": f"Requête de recrutement {job_title_id} envoyée dans avec succès"
+            })
+    
+    except IntegrityError as e:
+        return Response({"status": "error", "message": str(e)},
+                        status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({"status": "error", "message": str(e)},
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(["DELETE"])
 def delete_recruitment():
