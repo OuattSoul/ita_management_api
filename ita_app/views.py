@@ -333,7 +333,7 @@ class EmployeeViewSet(viewsets.ViewSet):
 
             with connection.cursor() as cursor:
                 cursor.execute("""
-                    INSERT INTO employees (matricule, full_name, job_title_id, service_id, hire_date,,created_at,updated_at,profil_status,password,access_code, email_pro,job_type_id)
+                    INSERT INTO employees (matricule, full_name, job_title_id, service_id, hire_date,created_at,updated_at,profil_status,password,access_code, email_pro,job_type_id)
                     VALUES (%s, %s, %s, %s, %s, %s, %s,%s,%s,%s,%s,%s)
                     RETURNING id;
                 """, [matricule, full_name, job_title_id, service_id, hire_date, created_at, updated_at,profil_status,hashed_password,hashed_access_code,email_pro,job_type_id])
@@ -365,6 +365,7 @@ class EmployeeViewSet(viewsets.ViewSet):
             profil_status = data.get("profil_status")
             access_code = data.get("access_code")
             password = data.get("password")
+            email_pro = data.get("email_pro")
 
             if not all([matricule, full_name, job_title_id, service_id]):
                 return Response({"status": "error", "message": "Champs obligatoires manquants pour PUT"}, status=status.HTTP_400_BAD_REQUEST)
@@ -378,10 +379,10 @@ class EmployeeViewSet(viewsets.ViewSet):
             with connection.cursor() as cursor:
                 cursor.execute("""
                     UPDATE employees
-                    SET matricule=%s, full_name=%s, job_title_id=%s, service_id=%s, hire_date=%s, updated_at=%s, profil_status=%s, password = %s, access_code =%s
+                    SET matricule=%s, full_name=%s, job_title_id=%s, service_id=%s, hire_date=%s, updated_at=%s, profil_status=%s, password = %s, access_code =%s, email_pro=%s
                     WHERE id=%s
                     RETURNING id;
-                """, [matricule, full_name, job_title_id, service_id, hire_date, updated_at,profil_status, hashed_password, hashed_access_code, pk])
+                """, [matricule, full_name, job_title_id, service_id, hire_date, updated_at,profil_status, hashed_password, hashed_access_code,email_pro, pk])
                 row = cursor.fetchone()
                 if not row:
                     return Response({"status": "error", "message": "Employé non trouvé"}, status=status.HTTP_404_NOT_FOUND)
