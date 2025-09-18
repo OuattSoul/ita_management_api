@@ -6,6 +6,7 @@ from django.db.utils import IntegrityError
 from django.contrib.auth.hashers import make_password
 import datetime, resend, requests, random
 from rest_framework_simplejwt.tokens import RefreshToken
+from jwt import InvalidTokenError, DecodeError
 
 def generate_access_code():
     """Génère un code d'accès unique à 4 chiffres."""
@@ -348,7 +349,7 @@ class EmployeeViewSet(viewsets.ViewSet):
             
 
             return Response({"status": "success", "message": "Employé créé avec succès", "employee_id": new_id}, status=status.HTTP_201_CREATED)
-        except IntegrityError as e:
+        except InvalidTokenError as e:
             return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
