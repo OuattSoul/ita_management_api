@@ -74,11 +74,21 @@ WSGI_APPLICATION = 'ita_app.wsgi.application'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 DATABASES = {
-    'default': dj_database_url.config(
-        #default=f"postgresql://postgres_test_altf_user:E99ks80CEhmmtbSJnmMoG1zsJfdh03hO@dpg-d306418dl3ps739rbaa0-a.oregon-postgres.render.com/postgres_test_altf",
-        default="postgresql://ita_rh_1lxk_user:O4mKoM4SMJPdyluzrAvoY3wKNJlKF1Et@dpg-d34kab56ubrc73acjl8g-a.oregon-postgres.render.com/ita_rh_1lxk",
-        conn_max_age=600
-    )
+    #'default': dj_database_url.config(
+    #    #default=f"postgresql://postgres_test_altf_user:E99ks80CEhmmtbSJnmMoG1zsJfdh03hO@dpg-d306418dl3ps739rbaa0-a.oregon-postgres.render.com/postgres_test_altf",
+    #    default="postgresql://ita_rh_1lxk_user:O4mKoM4SMJPdyluzrAvoY3wKNJlKF1Et@dpg-d34kab56ubrc73acjl8g-a.oregon-postgres.render.com/ita_rh_1lxk",
+    #    conn_max_age=600
+    #)
+
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "ita_rh",
+        "USER": "root",
+        "PASSWORD": "root",
+        "HOST": "localhost",
+        "PORT": 5432
+    }
+    
 
     
 }
