@@ -339,7 +339,7 @@ class EmployeeViewSet(viewsets.ViewSet):
                     created_at, updated_at, profil_status, hashed_password, hashed_access_code,
                     email_pro, job_type_id])
                 
-                row = cursor.fetchone()[0]
+                row = cursor.fetchone()
                 #row = cursor.fetchone()
                 if not row:
                     return Response({"status": "error", "message": "Erreur lors de la création de l'employé"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
