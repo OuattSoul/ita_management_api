@@ -349,7 +349,7 @@ class EmployeeViewSet(viewsets.ViewSet):
             
 
             return Response({"status": "success", "message": "Employé créé avec succès", "employee_id": new_id}, status=status.HTTP_201_CREATED)
-        except InvalidTokenError as e:
+        except IntegrityError as e:
             return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -721,6 +721,148 @@ class JobTitleViewSet(viewsets.ViewSet):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
+class EmployeeAttendanceViewSet(viewsets.ViewSet):
+    """CRUD complet pour la table employee_attendance"""
+
+    def list(self, request):
+        """GET /employee_attendance/ → récupérer tous les enregistrements"""
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT id, employee_name, employee_function, site, arrival, departure, time_worked, pointage_status
+                    FROM employee_attendance
+                    ORDER BY id;
+                """)
+                rows = cursor.fetchall()
+                result = []
+                for row in rows:
+                    result.append({
+                        "id": row[0],
+                        "employee_name": row[1],
+                        "employee_function": row[2],
+                        "site": row[3],
+                        "arrival": row[4],
+                        "departure": row[5],
+                        "time_worked": str(row[6]),
+                        "pointage_status": row[7],
+                    })
+            return Response({"status": "success", "data": result})
+        except Exception as e:
+            return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def retrieve(self, request, pk=None):
+        """GET /employee_attendance/{id}/ → récupérer un enregistrement"""
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT id, employee_name, employee_function, site, arrival, departure, time_worked, pointage_status
+                    FROM employee_attendance
+                    WHERE id = %s;
+                """, [pk])
+                row = cursor.fetchone()
+                if not row:
+                    return Response({"status": "error", "message": "Record not found"}, status=status.HTTP_404_NOT_FOUND)
+                record = {
+                    "id": row[0],
+                    "employee_name": row[1],
+                    "employee_function": row[2],
+                    "site": row[3],
+                    "arrival": row[4],
+                    "departure": row[5],
+                    "time_worked": str(row[6]),
+                    "pointage_status": row[7],
+                }
+            return Response({"status": "success", "data": record})
+        except Exception as e:
+            return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def create(self, request):
+        """POST /employee_attendance/ → créer un enregistrement"""
+        data = request.data
+        try:
+            employee_name = data.get("employee_name")
+            employee_function = data.get("employee_function")
+            site = data.get("site")
+            arrival = data.get("arrival")
+            departure = data.get("departure")
+            time_worked = data.get("time_worked")
+            pointage_status = data.get("pointage_status")
+
+            if not all([employee_name, employee_function, site, arrival, departure, pointage_status]):
+                return Response({"status": "error", "message": "Champs obligatoires manquants"}, status=status.HTTP_400_BAD_REQUEST)
+
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO employee_attendance
+                    (employee_name, employee_function, site, arrival, departure, time_worked, pointage_status)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    RETURNING id;
+                """, [employee_name, employee_function, site, arrival, departure, time_worked, pointage_status])
+                new_id = cursor.fetchone()[0]
+
+            return Response({"status": "success", "message": "Record created", "id": new_id}, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def update(self, request, pk=None):
+        """PUT /employee_attendance/{id}/ → mise à jour complète"""
+        data = request.data
+        try:
+            employee_name = data.get("employee_name")
+            employee_function = data.get("employee_function")
+            site = data.get("site")
+            arrival = data.get("arrival")
+            departure = data.get("departure")
+            time_worked = data.get("time_worked")
+            pointage_status = data.get("pointage_status")
+
+            if not all([employee_name, employee_function, site, arrival, departure, pointage_status]):
+                return Response({"status": "error", "message": "Champs obligatoires manquants"}, status=status.HTTP_400_BAD_REQUEST)
+
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    UPDATE employee_attendance
+                    SET employee_name=%s, employee_function=%s, site=%s, arrival=%s, departure=%s, time_worked=%s, pointage_status=%s
+                    WHERE id=%s
+                    RETURNING id;
+                """, [employee_name, employee_function, site, arrival, departure, time_worked, pointage_status, pk])
+                row = cursor.fetchone()
+                if not row:
+                    return Response({"status": "error", "message": "Record not found"}, status=status.HTTP_404_NOT_FOUND)
+
+            return Response({"status": "success", "message": "Record updated", "id": pk})
+        except Exception as e:
+            return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def partial_update(self, request, pk=None):
+        """PATCH /employee_attendance/{id}/ → mise à jour partielle"""
+        data = request.data
+        try:
+            set_clauses = []
+            values = []
+            for field in ["employee_name", "employee_function", "site", "arrival", "departure", "time_worked", "pointage_status"]:
+                if field in data:
+                    set_clauses.append(f"{field}=%s")
+                    values.append(data[field])
+
+            if not set_clauses:
+                return Response({"status": "error", "message": "Aucun champ à mettre à jour"}, status=status.HTTP_400_BAD_REQUEST)
+
+            values.append(pk)
+            with connection.cursor() as cursor:
+                cursor.execute(f"""
+                    UPDATE employee_attendance
+                    SET {', '.join(set_clauses)}
+                    WHERE id=%s
+                    RETURNING id;
+                """, values)
+                row = cursor.fetchone()
+                if not row:
+                    return Response({"status": "error", "message": "Record not found"}, status=status.HTTP_404_NOT_FOUND)
+
+            return Response({"status": "success", "message": "Record partially updated", "id": pk})
+        except Exception as e:
+            return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 
