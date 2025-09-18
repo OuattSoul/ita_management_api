@@ -334,7 +334,6 @@ def get_leaves(request):
 
 
 # recruitment
-
 @api_view(["GET", "POST", "PUT", "DELETE"])
 def recruitments(request):
     if request.method == "GET":
@@ -345,6 +344,72 @@ def recruitments(request):
         request_recruitment()
     elif request.method == "DELETE":
         request_recruitment()
+
+@api_view(["GET"])
+def get_recruitment_by_id(request, recruitment_id):
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT rr.id,
+                       rr.priority,
+                       rr.salary,
+                       rr.needs,
+                       rr.skills,
+                       rr.created_at,
+                       rr.updated_at,
+                       rr.creation_date,
+                       rr.recruitment_status,
+                       rr.end_period,
+                       s.id AS service_id,
+                       s.name AS service_name,
+                       s.chief AS service_chief,
+                       jt.id AS job_title_id,
+                       jt.title AS job_title,
+                       jty.id AS job_type_id,
+                       jty.type_name AS job_type
+                FROM recruitment_requests rr
+                JOIN request_service s ON rr.service_id = s.id
+                JOIN job_titles jt ON rr.job_title_id = jt.id
+                JOIN job_types jty ON rr.job_type_id = jty.id
+                WHERE rr.id = %s;
+            """, [recruitment_id])
+            
+            row = cursor.fetchone()
+            if not row:
+                return Response({"status": "error", "message": "Recrutement non trouvé"}, status=404)
+
+            recruitment = {
+                "id": row[0],
+                "priority": row[1],
+                "salary": row[2],
+                "needs": row[3],
+                "skills": row[4],
+                "created_at": row[5],
+                "updated_at": row[6],
+                "creation_date": row[7],
+                "recruitment_status": row[8],
+                "end_period": row[9],
+                "service": {
+                    "id": row[10],
+                    "name": row[11],
+                    "chief": row[12]
+                },
+                "job_title": {
+                    "id": row[13],
+                    "title": row[14]
+                },
+                "job_type": {
+                    "id": row[15],
+                    "type_name": row[16]
+                }
+            }
+
+        return Response({"status": "ok", "recruitment": recruitment})
+
+    except Exception as e:
+        return Response({"status": "error", "message": str(e)}, status=500)
+
+
 @api_view(["POST"])
 def request_recruitment(request):
     data = request.data

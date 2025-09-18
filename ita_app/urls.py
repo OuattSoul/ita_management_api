@@ -17,7 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
-from ita_app.views import create_employee,presence_pointage,get_pointage,get_employees,db_connectivity,get_staff,assign_mission,get_missions,set_leaves,get_leaves,request_recruitment,get_recruitments, get_users_query, register_staff, login_staff
+from ita_app.views import create_employee,get_recruitment_by_id,presence_pointage,get_pointage,get_employees,db_connectivity,get_staff,assign_mission,get_missions,set_leaves,get_leaves,request_recruitment,get_recruitments, get_users_query, register_staff, login_staff
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -30,8 +30,9 @@ urlpatterns = [
     path("api/missions/get-mission/", get_missions, name="get-mission"),
     path("api/leaves/set-leave/", set_leaves, name="set-leave"),
     path("api/leaves/get-leave/", get_leaves, name="get-leave"),
-    path("api/recruitments/", request_recruitment, name="request-recruitment"),
+    path("api/recruitments/create", request_recruitment, name="request-recruitment"),
     path("api/recruitments/", get_recruitments, name="get-recruitments"),
+    path("api/recruitments/<int:recruitment_id>/", get_recruitment_by_id, name="get-recruitments"),
     path("api/employees/create/", create_employee, name="create-employee"),
     path("api/employees/list/", get_employees, name="get-employees"),
     path("api/employees/set-pointage/", presence_pointage, name="set-presence"),
