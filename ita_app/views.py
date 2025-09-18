@@ -6,6 +6,7 @@ from django.db.utils import IntegrityError
 from django.contrib.auth.hashers import make_password
 import datetime, resend, requests, random
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.utils.dateparse import parse_datetime
 
 def generate_access_code():
     """Génère un code d'accès unique à 4 chiffres."""
