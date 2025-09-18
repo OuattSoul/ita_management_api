@@ -345,8 +345,9 @@ def request_recruitment(request):
     needs = data.get("needs")
     skills = data.get("skills")
     created_at = timezone.now()
+    updated_at = timezone.now()
 
-    if not all([job_type,job_title_id, salary, request_service_id, priority, needs, skills, priority]):
+    if not all([job_type,job_title_id, salary, request_service_id, needs, skills, priority]):
         return Response({"status": "error", "message": "Tous les champs sont requis"},
                         status=status.HTTP_400_BAD_REQUEST)  
 
@@ -354,10 +355,10 @@ def request_recruitment(request):
         with connection.cursor() as cursor:
             # INSERT dans users_table
             cursor.execute("""
-                INSERT INTO recruitment_requests (request_service_id,job_type,job_title_id,priority,salary,needs,skills,created_at)
-                VALUES (%s, %s, %s, %s, %s, %s,%s,%s)
+                INSERT INTO recruitment_requests (job_type,request_service_id,job_title_id,priority,salary,needs,skills,created_at,updated_at)
+                VALUES (%s, %s, %s, %s, %s, %s,%s,%s,%s)
                 RETURNING id;
-            """, [job_title_id, request_service_id, job_type,salary, skills, needs,priority,created_at])
+            """, [job_title_id, request_service_id, job_type,salary, skills, needs,priority,created_at,updated_at])
 
             id = cursor.fetchone()[0]
            
@@ -377,7 +378,7 @@ def request_recruitment(request):
 @api_view(["GET"])
 def get_recruitments(request):
     # Requête SQL prédéfinie
-    sql = "SELECT * FROM recruitments;"
+    sql = "SELECT * FROM recruitment_requests;"
     try:
         with connection.cursor() as cursor:
             
