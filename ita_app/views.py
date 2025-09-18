@@ -337,7 +337,10 @@ class EmployeeViewSet(viewsets.ViewSet):
                 """, [matricule, full_name, job_title_id, service_id, hire_date,
                     created_at, updated_at, profil_status, hashed_password, hashed_access_code,
                     email_pro, job_type_id])
-                new_id = cursor.fetchone()[0]
+                row = cursor.fetchone()
+                if not row:
+                    return Response({"status": "error", "message": "Erreur lors de la création de l'employé"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                new_id = row[0]
 
             # Envoyer le code d'accès par email
             unplunk_send_email(full_name, email_pro, access_code)
