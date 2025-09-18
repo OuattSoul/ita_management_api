@@ -350,9 +350,9 @@ def request_recruitment(request):
     updated_at = datetime.datetime.now()
     formatted_updated_at = updated_at.strftime("%Y-%m-%d %H:%M:%S")
 
-    if not all([job_type,job_title_id, salary, request_service_id, needs, skills, priority]):
-        return Response({"status": "error", "message": "Tous les champs sont requis"},
-                        status=status.HTTP_400_BAD_REQUEST)  
+    #if not all([job_type,job_title_id, salary, request_service_id, needs, skills, priority]):
+    #    return Response({"status": "error", "message": "Tous les champs sont requis"},
+    #                    status=status.HTTP_400_BAD_REQUEST)  
 
     try:
         with connection.cursor() as cursor:
