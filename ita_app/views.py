@@ -97,7 +97,7 @@ class UserViewSet(viewsets.ViewSet):
         data = request.data
         try:
             user_role_id = data.get("user_role_id")
-            user_id = data.get("user_id")
+            #user_id = data.get("user_id")
             email_prof = data.get("email_prof")
             job_title_id = data.get("job_title_id")
             affected_at_service_id = data.get("affected_at_service_id")
@@ -108,7 +108,7 @@ class UserViewSet(viewsets.ViewSet):
             created_at = datetime.datetime.now()
             updated_at = datetime.datetime.now()
 
-            required_fields = [user_role_id, user_id, email_prof, job_title_id,
+            required_fields = [user_role_id, email_prof, job_title_id,
                                affected_at_service_id, hire_date, job_type_id]
             if not all(required_fields):
                 return Response(
@@ -128,12 +128,12 @@ class UserViewSet(viewsets.ViewSet):
             with connection.cursor() as cursor:
                 cursor.execute("""
                     INSERT INTO users
-                    (user_role_id, user_id, email_prof, job_title_id, affected_at_service_id,
+                    (user_role_id, email_prof, job_title_id, affected_at_service_id,
                      hire_date, job_type_id, profile_status, created_at, updated_at)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id;
                 """, [
-                    user_role_id, user_id, email_prof, job_title_id,
+                    user_role_id, email_prof, job_title_id,
                     affected_at_service_id, hire_date, job_type_id, profile_status,
                     created_at, updated_at
                 ])
@@ -339,34 +339,42 @@ class EmployeeViewSet(viewsets.ViewSet):
                     created_at, updated_at, profil_status, hashed_password, hashed_access_code,
                     email_pro, job_type_id])
                 
-                new_id = cursor.fetchone()[0]
+                row = cursor.fetchone()[0]
                 #row = cursor.fetchone()
-                #if not row:
-                #    return Response({"status": "error", "message": "Erreur lors de la création de l'employé"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                #new_id = row[0]
+                if not row:
+                    return Response({"status": "error", "message": "Erreur lors de la création de l'employé"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                new_id = row[0]
 
             # Envoyer le code d'accès par email
             unplunk_send_email(full_name, email_pro, access_code)
 
-            # Génération du token JWT avec SimpleJWT
-            class DummyUser:
-                """Utilisateur fictif pour SimpleJWT"""
-                def __init__(self, id, full_name):
-                    self.id = id
-                    self.full_name = full_name
-
-            dummy_user = DummyUser(new_id, full_name)
-            refresh = RefreshToken.for_user(dummy_user)
-            access_token = str(refresh.access_token)
-            refresh_token = str(refresh)
-
             return Response({
-                "status": "success",
+                "status" : "success",
                 "message": "Employé créé avec succès",
                 "employee_id": new_id,
-                "access_token": access_token,
-                "refresh_token": refresh_token
             }, status=status.HTTP_201_CREATED)
+
+            # Génération du token JWT avec SimpleJWT
+            #class DummyUser:
+            #    """Utilisateur fictif pour SimpleJWT"""
+            #    def __init__(self, id, full_name):
+            #        self.id = id
+            #        self.full_name = full_name
+            
+
+
+            #dummy_user = DummyUser(new_id, full_name)
+            #refresh = RefreshToken.for_user(dummy_user)
+            #access_token = str(refresh.access_token)
+            #refresh_token = str(refresh)
+
+            #return Response({
+            #    "status": "success",
+            #    "message": "Employé créé avec succès",
+            #    "employee_id": new_id,
+            #    "access_token": access_token,
+            #    "refresh_token": refresh_token
+            #}, status=status.HTTP_201_CREATED)
 
         except Exception as e:
             return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
