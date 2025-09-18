@@ -63,7 +63,7 @@ class UserViewSet(viewsets.ViewSet):
         try:
             with connection.cursor() as cursor:
                 cursor.execute("""
-                    SELECT id, user_role_id, user_id, email_prof, employee_function_id,
+                    SELECT id, user_role_id, user_id, email_prof, job_title_id,
                            affected_at_service_id, hire_date, job_type_id, profile_status,
                            created_at, updated_at
                     FROM users
@@ -78,7 +78,7 @@ class UserViewSet(viewsets.ViewSet):
                     "user_role_id": row[1],
                     "user_id": row[2],
                     "email_prof": row[3],
-                    "employee_function_id": row[4],
+                    "job_title_id": row[4],
                     "affected_at_service_id": row[5],
                     "hire_date": row[6],
                     "job_type_id": row[7],
@@ -159,7 +159,7 @@ class UserViewSet(viewsets.ViewSet):
         data = request.data
         try:
             updated_at = datetime.datetime.now()
-            fields = ["user_role_id", "user_id", "email_prof", "employee_function_id",
+            fields = ["user_role_id", "user_id", "email_prof", "job_title_id",
                       "affected_at_service_id", "hire_date", "job_type_id", "profile_status"]
             values = [data.get(f) for f in fields]
 
@@ -170,7 +170,7 @@ class UserViewSet(viewsets.ViewSet):
             with connection.cursor() as cursor:
                 cursor.execute(f"""
                     UPDATE users
-                    SET user_role_id=%s, user_id=%s, email_prof=%s, employee_function_id=%s,
+                    SET user_role_id=%s, user_id=%s, email_prof=%s, job_title_id=%s,
                         affected_at_service_id=%s, hire_date=%s, job_type_id=%s, profile_status=%s,
                         updated_at=%s
                     WHERE id=%s
@@ -192,7 +192,7 @@ class UserViewSet(viewsets.ViewSet):
             set_clauses = []
             values = []
             for key, val in data.items():
-                if key in ["user_role_id", "user_id", "email_prof", "employee_function_id",
+                if key in ["user_role_id", "user_id", "email_prof", "job_title_id",
                            "affected_at_service_id", "hire_date", "job_type_id", "profile_status"]:
                     set_clauses.append(f"{key}=%s")
                     values.append(val)
@@ -422,9 +422,213 @@ class EmployeeViewSet(viewsets.ViewSet):
             return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+class RecruitmentRequestViewSet(viewsets.ViewSet):
+    """
+    ViewSet CRUD complet pour la table 'recruitment_requests' via SQL direct.
+    """
 
+    def list(self, request):
+        """GET /recruitments/ → liste toutes les requêtes de recrutement"""
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT rr.id,
+                           rr.priority,
+                           rr.salary,
+                           rr.needs,
+                           rr.skills,
+                           rr.created_at,
+                           rr.updated_at,
+                           rr.creation_date,
+                           rr.recruitment_status,
+                           rr.end_period,
+                           s.id AS service_id,
+                           s.name AS service_name,
+                           s.chief AS service_chief,
+                           jt.id AS job_title_id,
+                           jt.title AS job_title,
+                           jty.id AS job_type_id,
+                           jty.type_name AS job_type
+                    FROM recruitment_requests rr
+                    JOIN request_service s ON rr.service_id = s.id
+                    JOIN job_titles jt ON rr.job_title_id = jt.id
+                    JOIN job_types jty ON rr.job_type_id = jty.id
+                    ORDER BY rr.id;
+                """)
+                rows = cursor.fetchall()
+                results = []
+                for r in rows:
+                    results.append({
+                        "id": r[0],
+                        "priority": r[1],
+                        "salary": r[2],
+                        "needs": r[3],
+                        "skills": r[4],
+                        "created_at": r[5],
+                        "updated_at": r[6],
+                        "creation_date": r[7],
+                        "recruitment_status": r[8],
+                        "end_period": r[9],
+                        "service": {
+                            "id": r[10],
+                            "name": r[11],
+                            "chief": r[12],
+                        },
+                        "job_title": {
+                            "id": r[13],
+                            "title": r[14],
+                        },
+                        "job_type": {
+                            "id": r[15],
+                            "type_name": r[16],
+                        }
+                    })
+            return Response({"status": "ok", "recruitments": results})
+        except Exception as e:
+            return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    def retrieve(self, request, pk=None):
+        """GET /recruitments/{id}/ → récupérer une requête spécifique"""
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT rr.id,
+                           rr.priority,
+                           rr.salary,
+                           rr.needs,
+                           rr.skills,
+                           rr.created_at,
+                           rr.updated_at,
+                           rr.creation_date,
+                           rr.recruitment_status,
+                           rr.end_period,
+                           s.id AS service_id,
+                           s.name AS service_name,
+                           s.chief AS service_chief,
+                           jt.id AS job_title_id,
+                           jt.title AS job_title,
+                           jty.id AS job_type_id,
+                           jty.type_name AS job_type
+                    FROM recruitment_requests rr
+                    JOIN request_service s ON rr.service_id = s.id
+                    JOIN job_titles jt ON rr.job_title_id = jt.id
+                    JOIN job_types jty ON rr.job_type_id = jty.id
+                    WHERE rr.id = %s;
+                """, [pk])
+                r = cursor.fetchone()
+                if not r:
+                    return Response({"status": "error", "message": "Requête non trouvée"}, status=status.HTTP_404_NOT_FOUND)
+                recruitment = {
+                    "id": r[0],
+                    "priority": r[1],
+                    "salary": r[2],
+                    "needs": r[3],
+                    "skills": r[4],
+                    "created_at": r[5],
+                    "updated_at": r[6],
+                    "creation_date": r[7],
+                    "recruitment_status": r[8],
+                    "end_period": r[9],
+                    "service": {
+                        "id": r[10],
+                        "name": r[11],
+                        "chief": r[12],
+                    },
+                    "job_title": {
+                        "id": r[13],
+                        "title": r[14],
+                    },
+                    "job_type": {
+                        "id": r[15],
+                        "type_name": r[16],
+                    }
+                }
+            return Response({"status": "ok", "recruitment": recruitment})
+        except Exception as e:
+            return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    def create(self, request):
+        """POST /recruitments/ → créer une requête de recrutement"""
+        data = request.data
+        service_id = data.get("service_id")
+        job_title_id = data.get("job_title_id")
+        job_type_id = data.get("job_type_id")
+        salary = data.get("salary")
+        priority = data.get("priority")
+        needs = data.get("needs")
+        skills = data.get("skills")
+        recruitment_status = data.get("recruitment_status")
+        end_period = data.get("end_period")
+
+        creation_date = datetime.date.today()
+        created_at = datetime.datetime.now()
+        updated_at = datetime.datetime.now()
+
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO recruitment_requests
+                    (service_id, job_title_id, job_type_id, priority, salary, needs, skills,
+                     created_at, updated_at, creation_date, recruitment_status, end_period)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    RETURNING id;
+                """, [service_id, job_title_id, job_type_id, priority, salary, needs, skills,
+                      created_at, updated_at, creation_date, recruitment_status, end_period])
+                request_id = cursor.fetchone()[0]
+
+            return self.retrieve(request, pk=request_id)
+        except IntegrityError as e:
+            return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def update(self, request, pk=None):
+        """PUT /recruitments/{id}/ → mise à jour complète"""
+        data = request.data
+        updated_at = datetime.datetime.now()
+        fields = ["service_id", "job_title_id", "job_type_id", "priority", "salary", "needs", "skills", "recruitment_status", "end_period"]
+        set_clause = []
+        values = []
+        for f in fields:
+            if f in data:
+                set_clause.append(f"{f}=%s")
+                values.append(data[f])
+        if not set_clause:
+            return Response({"status": "error", "message": "Aucun champ fourni"}, status=status.HTTP_400_BAD_REQUEST)
+        set_clause.append("updated_at=%s")
+        values.append(updated_at)
+        values.append(pk)
+
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute(f"""
+                    UPDATE recruitment_requests
+                    SET {', '.join(set_clause)}
+                    WHERE id=%s
+                    RETURNING id;
+                """, values)
+                row = cursor.fetchone()
+                if not row:
+                    return Response({"status": "error", "message": "Requête non trouvée"}, status=status.HTTP_404_NOT_FOUND)
+            return self.retrieve(request, pk=pk)
+        except Exception as e:
+            return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def partial_update(self, request, pk=None):
+        """PATCH /recruitments/{id}/ → mise à jour partielle"""
+        return self.update(request, pk)
+
+    def destroy(self, request, pk=None):
+        """DELETE /recruitments/{id}/ → supprimer une requête"""
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("DELETE FROM recruitment_requests WHERE id=%s RETURNING id;", [pk])
+                row = cursor.fetchone()
+                if not row:
+                    return Response({"status": "error", "message": "Requête non trouvée"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"status": "ok", "message": "Requête supprimée", "id": pk})
+        except Exception as e:
+                    return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 
