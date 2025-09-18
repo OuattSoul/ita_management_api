@@ -242,7 +242,7 @@ class EmployeeViewSet(viewsets.ViewSet):
         try:
             with connection.cursor() as cursor:
                 cursor.execute("""
-                    SELECT id,matricule, full_name, job_title_id, service_id, hire_date,created_at,updated_at,profil_status,email_pro,job_type_id
+                    SELECT matricule, full_name, job_title_id, service_id, hire_date,created_at,updated_at,profil_status,email_pro,job_type_id
                     FROM employees
                     ORDER BY id;
                 """)
@@ -250,7 +250,7 @@ class EmployeeViewSet(viewsets.ViewSet):
                 employees = []
                 for row in rows:
                     employees.append({
-                        "id": row[0],
+                        "job_type_id": row[0],
                         "matricule": row[1],
                         "full_name": row[2],
                         "job_title_id": row[3],
@@ -259,8 +259,7 @@ class EmployeeViewSet(viewsets.ViewSet):
                         "created_at": row[6],
                         "updated_at": row[7],
                         "profil_status" : row[8],
-                        "email_pro" : row[9],
-                        "job_type_id" : row[10]
+                        "email_pro" : row[9]
 
                     })
             return Response({"status": "success", "employees": employees})
