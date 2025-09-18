@@ -311,7 +311,7 @@ class EmployeeViewSet(viewsets.ViewSet):
             email_pro = data.get("email_pro")
             job_type_id = data.get("job_type_id")
 
-            if not all([matricule, full_name, job_title_id, service_id, hire_date, email_pro]):
+            if not all([matricule, full_name, job_title_id, service_id, hire_date, email_pro,job_type_id]):
                 return Response({"status": "error", "message": "Champs obligatoires manquants"}, status=status.HTTP_400_BAD_REQUEST)
 
             hashed_password = make_password(password)
