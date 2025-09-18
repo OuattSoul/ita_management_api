@@ -1202,6 +1202,82 @@ class LeaveViewSet(viewsets.ViewSet):
             return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+class PresenceViewSet(viewsets.ViewSet):
+    """CRUD pour la table presences"""
+
+    def list(self, request):
+        """GET /presences/ → lister toutes les présences"""
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT * FROM presences")
+            columns = [col[0] for col in cursor.description]
+            data = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        return Response(data)
+
+    def retrieve(self, request, pk=None):
+        """GET /presences/{id}/ → récupérer une présence"""
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT * FROM presences WHERE id = %s", [pk])
+            row = cursor.fetchone()
+            if not row:
+                return Response({"status": "error", "message": "Présence non trouvée"}, status=status.HTTP_404_NOT_FOUND)
+            columns = [col[0] for col in cursor.description]
+            data = dict(zip(columns, row))
+        return Response(data)
+
+    def create(self, request):
+        """POST /presences/ → créer une présence"""
+        data = request.data
+        employee_id = data.get("employee_id")
+        site = data.get("site", "")
+        arrival = parse_datetime(data.get("arrival")) if data.get("arrival") else None
+        departure = parse_datetime(data.get("departure")) if data.get("departure") else None
+        pointage_status = data.get("pointage_status")
+
+        # Calculer le temps travaillé en minutes
+        if arrival and departure:
+            time_worked = int((departure - arrival).total_seconds() / 60)
+        else:
+            time_worked = 0
+
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO presences (employee_id, site, arrival, departure, time_worked, pointage_status)
+                VALUES (%s, %s, %s, %s, %s, %s) RETURNING id
+            """, [employee_id, site, arrival, departure, time_worked, pointage_status])
+            new_id = cursor.fetchone()[0]
+
+        return Response({"status": "success", "id": new_id}, status=status.HTTP_201_CREATED)
+
+    def update(self, request, pk=None):
+        """PUT /presences/{id}/ → mettre à jour une présence"""
+        data = request.data
+        employee_id = data.get("employee_id")
+        site = data.get("site")
+        arrival = parse_datetime(data.get("arrival")) if data.get("arrival") else None
+        departure = parse_datetime(data.get("departure")) if data.get("departure") else None
+        pointage_status = data.get("pointage_status")
+
+        # Calculer le temps travaillé en minutes
+        if arrival and departure:
+            time_worked = int((departure - arrival).total_seconds() / 60)
+        else:
+            time_worked = 0
+
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                UPDATE presences
+                SET employee_id=%s, site=%s, arrival=%s, departure=%s, time_worked=%s, pointage_status=%s
+                WHERE id=%s
+            """, [employee_id, site, arrival, departure, time_worked, pointage_status, pk])
+
+        return Response({"status": "success"}, status=status.HTTP_200_OK)
+
+    def destroy(self, request, pk=None):
+        """DELETE /presences/{id}/ → supprimer une présence"""
+        with connection.cursor() as cursor:
+            cursor.execute("DELETE FROM presences WHERE id = %s", [pk])
+        return Response({"status": "success"}, status=status.HTTP_204_NO_CONTENT)
+
 
 
 
