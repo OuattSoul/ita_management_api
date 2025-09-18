@@ -344,7 +344,7 @@ def request_recruitment(request):
     salary = data.get("salary")
     needs = data.get("needs")
     skills = data.get("skills")
-    #created_at = timezone.now()
+    created_at = timezone.now()
 
     if not all([job_type,job_title_id, salary, request_service_id, priority, needs, skills, priority]):
         return Response({"status": "error", "message": "Tous les champs sont requis"},
@@ -354,10 +354,10 @@ def request_recruitment(request):
         with connection.cursor() as cursor:
             # INSERT dans users_table
             cursor.execute("""
-                INSERT INTO recruitment_requests (request_service_id,job_type,job_title_id,priority,salary,needs,skills)
-                VALUES (%s, %s, %s, %s, %s, %s,%s)
+                INSERT INTO recruitment_requests (request_service_id,job_type,job_title_id,priority,salary,needs,skills,created_at)
+                VALUES (%s, %s, %s, %s, %s, %s,%s,%s)
                 RETURNING id;
-            """, [job_title_id, request_service_id, job_type,salary, skills, needs,priority])
+            """, [job_title_id, request_service_id, job_type,salary, skills, needs,priority,created_at])
 
             id = cursor.fetchone()[0]
            
@@ -373,7 +373,6 @@ def request_recruitment(request):
     except Exception as e:
         return Response({"status": "error", "message": str(e)},
                         status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 @api_view(["GET"])
 def get_recruitments(request):
@@ -396,6 +395,13 @@ def get_recruitments(request):
     except Exception as e:
         return Response({"status": "error", "message": str(e)}, status=400)
 
+@api_view(["PUT"])
+def edit_recruitment():
+    print("")
+
+@api_view(["DELETE"])
+def delete_recruitment():
+    print("")
 
 # pointage
 @api_view(["POST"])
