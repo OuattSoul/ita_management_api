@@ -242,7 +242,7 @@ class EmployeeViewSet(viewsets.ViewSet):
         try:
             with connection.cursor() as cursor:
                 cursor.execute("""
-                    SELECT matricule, full_name, job_title_id, service_id, hire_date,created_at,updated_at,profil_status,email_pro,job_type_id
+                    SELECT id,matricule, full_name, job_title_id, service_id, hire_date,created_at,updated_at,profil_status,email_pro,job_type_id
                     FROM employees
                     ORDER BY id;
                 """)
