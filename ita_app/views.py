@@ -753,7 +753,56 @@ def get_employees(request):
     except Exception as e:
         return Response({"status": "error", "message": str(e)}, status=400)
 
+@api_view(["POST"])
+def create_user(request):
+    data = request.data
+    try:
+        user_role_id = data.get("user_role_id")
+        user_id = data.get("user_id")
+        email_prof = data.get("email_prof")
+        job_title_id = data.get("job_title_id")
+        affected_at_service_id = data.get("affected_at_service_id")
+        hire_date = data.get("hire_date")
+        job_type_id = data.get("job_type_id")
+        profile_status = data.get("profile_status", "incomplet")  # valeur par défaut
 
+        created_at = datetime.datetime.now()
+        updated_at = datetime.datetime.now()
+
+        # Vérifier que tous les champs obligatoires sont présents
+        required_fields = [user_role_id, user_id, email_prof, job_title_id,
+                           affected_at_service_id, hire_date, job_type_id]
+        if not all(required_fields):
+            return Response({"status": "error", "message": "Tous les champs obligatoires doivent être remplis"}, status=400)
+
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO users
+                (user_role_id, user_id, email_prof, job_title_id, affected_at_service_id, hire_date, job_type_id, profile_status, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id;
+            """, [
+                user_role_id, user_id, email_prof, job_title_id,
+                affected_at_service_id, hire_date, job_type_id, profile_status,
+                created_at, updated_at
+            ])
+            
+            row = cursor.fetchone()
+            if not row:
+                return Response({"status": "error", "message": "L'utilisateur n'a pas pu être créé"}, status=500)
+
+            user_id_created = row[0]
+
+        return Response({
+            "status": "success",
+            "message": "Utilisateur créé avec succès",
+            "user_id": user_id_created
+        })
+
+    except IntegrityError as e:
+        return Response({"status": "error", "message": str(e)}, status=400)
+    except Exception as e:
+        return Response({"status": "error", "message": str(e)}, status=500)
 
 
 
