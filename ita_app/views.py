@@ -415,7 +415,7 @@ def edit_recruitment(request):
     updated_at = datetime.datetime.now()
     formatted_updated_at = updated_at.strftime("%Y-%m-%d %H:%M:%S")
 
-    if not all([job_type,job_title_id, salary, request_service_id, needs, skills, priority]):
+    if not all([salary, request_service_id, needs, skills, priority]):
         return Response({"status": "error", "message": "Tous les champs sont requis"},
                         status=status.HTTP_400_BAD_REQUEST)  
 
@@ -423,7 +423,7 @@ def edit_recruitment(request):
         with connection.cursor() as cursor:
             # INSERT dans users_table
             cursor.execute("""
-                INSERT INTO recruitment_requests(request_service_id, job_title_id, priority, salary, needs, skills) 
+                INSERT INTO recruitment_requests(job_type,request_service_id, job_title_id, priority, salary, needs, skills) 
                                         VALUES (%s, %s, %s, %s, %s, %s,%s,%s,%s)
                 RETURNING id;
             """, [job_type,request_service_id,job_title_id,priority,salary,needs,skills,formatted_created_at,formatted_updated_at])
