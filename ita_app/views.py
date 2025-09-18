@@ -334,6 +334,17 @@ def get_leaves(request):
 
 
 # recruitment
+
+@api_view(["GET", "POST", "PUT", "DELETE"])
+def recruitments(request):
+    if request.method == "GET":
+        get_recruitments()
+    elif request.method == "POST":
+        request_recruitment()
+    elif request.method == "PUT":
+        request_recruitment()
+    elif request.method == "DELETE":
+        request_recruitment()
 @api_view(["POST"])
 def request_recruitment(request):
     data = request.data
