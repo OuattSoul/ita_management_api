@@ -242,8 +242,7 @@ class EmployeeViewSet(viewsets.ViewSet):
         try:
             with connection.cursor() as cursor:
                 cursor.execute("""
-                    SELECT id, matricule, full_name, job_title_id, service_id, hire_date,
-                           created_at, updated_at, profil_status
+                    SELECT matricule, full_name, job_title_id, service_id, hire_date,,created_at,updated_at,profil_status,user_email,job_type_id
                     FROM employees
                     ORDER BY id;
                 """)
@@ -260,7 +259,9 @@ class EmployeeViewSet(viewsets.ViewSet):
                         "created_at": row[6],
                         "updated_at": row[7],
                         "profil_status" : row[8],
-                        "user_email" : row[9]
+                        "user_email" : row[9],
+                        "job_type_id" : row[10]
+
                     })
             return Response({"status": "success", "employees": employees})
         except Exception as e:
@@ -272,7 +273,7 @@ class EmployeeViewSet(viewsets.ViewSet):
             with connection.cursor() as cursor:
                 cursor.execute("""
                     SELECT id, matricule, full_name, job_title_id, service_id, hire_date,
-                           created_at, updated_at,profil_status,user_email
+                           created_at, updated_at,profil_status,user_email, job_type_id
                     FROM employees
                     WHERE id = %s;
                 """, [pk])
