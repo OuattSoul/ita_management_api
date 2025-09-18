@@ -91,9 +91,6 @@ def register_staff(request):
     user_email = data.get("user_email")
     role = data.get("role")
     password = data.get("password")
-    created_at = timezone.now()
-    updated_at = timezone.now()
-    last_login = timezone.now()
 
     if not all([first_name, last_name, role, password, user_email]):
         return Response({"status": "error", "message": "Tous les champs sont requis"},
@@ -107,7 +104,7 @@ def register_staff(request):
         while True:
             code = generate_access_code() # encrypt this code
             with connection.cursor() as cursor:
-                cursor.execute("SELECT 1 FROM ita_staff_users WHERE access_code = %s", [code])
+                cursor.execute("SELECT 1 FROM staffs WHERE access_code = %s", [code])
                 exists = cursor.fetchone()
             if not exists:
                 access_code = code
@@ -117,10 +114,10 @@ def register_staff(request):
         with connection.cursor() as cursor:
             # INSERT dans users_table
             cursor.execute("""
-                INSERT INTO ita_staff_users (first_name,last_name,user_email,role,access_code,password,created_at,updated_at,last_login)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                INSERT INTO staffs (first_name,last_name,role,user_email,access_code,password)
+                VALUES (%s, %s, %s, %s, %s, %s)
                 RETURNING id;
-            """, [first_name, last_name, user_email, role,access_code, hashed_password, created_at, updated_at, last_login])
+            """, [first_name, last_name, user_email, role,access_code, hashed_password])
 
             user_id = cursor.fetchone()[0]
             #resend_send_email(first_name,user_email,access_code)
@@ -212,14 +209,14 @@ def get_staff(request):
 def assign_mission(request):
     data = request.data
     req_id = data.get("req_id")
-    req_service = data.get("req_service")
+    request_service_id = data.get("request_service_id")
     project_zone = data.get("project_zone")
     people_required = data.get("people_required")
     priority = data.get("priority")
     deadline = data.get("deadline")
     mission_status = data.get("mission_status")
 
-    if not all([req_id, req_service, people_required, project_zone, priority, deadline, mission_status]):
+    if not all([req_id, request_service_id, people_required, project_zone, priority, deadline, mission_status]):
         return Response({"status": "error", "message": "Tous les champs sont requis"},
                         status=status.HTTP_400_BAD_REQUEST)  
 
@@ -227,10 +224,10 @@ def assign_mission(request):
         with connection.cursor() as cursor:
             # INSERT dans users_table
             cursor.execute("""
-                INSERT INTO missions (req_id,req_service,project_zone,people_required,priority,deadline,mission_status)
+                INSERT INTO missions (req_id,request_service_id,project_zone,people_required,priority,deadline,mission_status)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
                 RETURNING id;
-            """, [req_id, req_service, project_zone,people_required, priority,deadline, mission_status])
+            """, [req_id, request_service_id, project_zone,people_required, priority,deadline, mission_status])
 
             req_id = cursor.fetchone()[0]
            
@@ -340,8 +337,8 @@ def get_leaves(request):
 def request_recruitment(request):
     data = request.data
     job_type = data.get("job_type")
-    req_service = data.get("req_service")
-    job_title = data.get("job_title")
+    request_service_id = data.get("request_service_id")
+    job_title_id = data.get("job_title_id")
     priority = data.get("priority")
     #status = data.get("status")
     salary = data.get("salary")
@@ -349,7 +346,7 @@ def request_recruitment(request):
     skills = data.get("skills")
     #created_at = timezone.now()
 
-    if not all([job_type,job_title, salary, req_service, priority, needs, skills, priority]):
+    if not all([job_type,job_title_id, salary, request_service_id, priority, needs, skills, priority]):
         return Response({"status": "error", "message": "Tous les champs sont requis"},
                         status=status.HTTP_400_BAD_REQUEST)  
 
@@ -357,17 +354,17 @@ def request_recruitment(request):
         with connection.cursor() as cursor:
             # INSERT dans users_table
             cursor.execute("""
-                INSERT INTO recruitments (job_title,req_service,job_type,salary,needs,skills,priority)
+                INSERT INTO recruitment_requests (request_service_id,job_type,job_title_id,priority,salary,needs,skills)
                 VALUES (%s, %s, %s, %s, %s, %s,%s)
                 RETURNING id;
-            """, [job_title, req_service, job_type,salary, skills, needs,priority])
+            """, [job_title_id, request_service_id, job_type,salary, skills, needs,priority])
 
-            leave_id = cursor.fetchone()[0]
+            id = cursor.fetchone()[0]
            
 
             return Response({
                 "status": "ok",
-                "message": f"Requête de recrutement {job_title} envoyée dans avec succès"
+                "message": f"Requête de recrutement {job_title_id} envoyée dans avec succès"
             })
     
     except IntegrityError as e:

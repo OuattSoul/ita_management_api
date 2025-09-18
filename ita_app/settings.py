@@ -79,6 +79,8 @@ DATABASES = {
         default="postgresql://ita_rh_1lxk_user:O4mKoM4SMJPdyluzrAvoY3wKNJlKF1Et@dpg-d34kab56ubrc73acjl8g-a.oregon-postgres.render.com/ita_rh_1lxk",
         conn_max_age=600
     )
+
+    
 }
 
 
