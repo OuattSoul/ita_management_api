@@ -126,6 +126,32 @@ class JobTitleViewSet(viewsets.ViewSet):
 
         return Response({"id": new_id, "title": title, "service_id": service_id}, status=status.HTTP_201_CREATED)
 
+
+    def partial_update(self, request, pk=None):
+        """PATCH /job/titles/{id}/ → mettre à jour partiellement un poste"""
+        data = request.data
+
+        # Récupérer les valeurs actuelles
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT title, service_id FROM job_titles WHERE id=%s;", [pk])
+            row = cursor.fetchone()
+        if not row:
+            return Response({"error": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        current_title, current_service_id = row
+        new_title = data.get("title", current_title)
+        new_service_id = data.get("service_id", current_service_id)
+
+        # Mettre à jour seulement les champs fournis
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE job_titles SET title=%s, service_id=%s WHERE id=%s RETURNING id;",
+                [new_title, new_service_id, pk]
+            )
+            updated = cursor.fetchone()
+
+        return Response({"id": pk, "title": new_title, "service_id": new_service_id})
+        
     def update(self, request, pk=None):
         """PUT /job/titles/{id}/ → mettre à jour un poste"""
         data = request.data
