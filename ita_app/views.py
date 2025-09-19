@@ -724,7 +724,7 @@ class RecruitmentRequestViewSet(viewsets.ViewSet):
                            jty.type_name AS job_type
                     FROM recruitment_requests rr
                     JOIN request_service s ON rr.service_id = s.id
-                    JOIN job_types jt ON rr.job_title_id = jt.id
+                    JOIN job_titles jt ON rr.job_title_id = jt.id
                     JOIN job_types jty ON rr.job_type_id = jty.id
                     WHERE rr.id = %s;
                 """, [pk])
