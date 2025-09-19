@@ -781,12 +781,12 @@ class RecruitmentRequestViewSet(viewsets.ViewSet):
             with connection.cursor() as cursor:
                 cursor.execute("""
                     INSERT INTO recruitment_requests
-                    (service_id, job_title_id, job_type_id, priority, salary, needs, skills,
-                     created_at, updated_at, creation_date, recruitment_status, end_period)
+                    (service_id, job_title_id, job_type_id, salary, needs, skills,
+                     created_at, updated_at, creation_date, recruitment_status, end_period,priority)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id;
-                """, [service_id, job_title_id, job_type_id, priority, salary, needs, skills,
-                      created_at, updated_at, creation_date, recruitment_status, end_period])
+                """, [service_id, job_title_id, job_type_id, salary, needs, skills,
+                      created_at, updated_at, creation_date, recruitment_status, end_period,priority])
                 request_id = cursor.fetchone()[0]
 
             return self.retrieve(request, pk=request_id)
