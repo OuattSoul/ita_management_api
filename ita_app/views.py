@@ -8,6 +8,7 @@ import datetime, resend, requests, random
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.utils.dateparse import parse_datetime
 from datetime import datetime
+from django.utils.dateparse import parse_date
 
 def generate_access_code():
     """Génère un code d'accès unique à 4 chiffres."""
@@ -1215,8 +1216,8 @@ class LeaveViewSet(viewsets.ViewSet):
         try:
             employee_id = data.get("employee_id")
             leave_type = data.get("leave_type")
-            start_date = data.get("start_date")
-            end_date = data.get("end_date")
+            start_date  = parse_date(data.get("start_date")) if data.get("start_date") else None
+            end_date = parse_date(data.get("end_date")) if data.get("end_date") else None
             #format_string = "'%Y-%m-%d"
             #start_datetime = datetime.strptime(start_date, format_string)
             #end_datetime = datetime.strptime(end_date, format_string)
