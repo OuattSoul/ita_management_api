@@ -1359,7 +1359,7 @@ class PresenceViewSet(viewsets.ViewSet):
 
         return Response({"status": "success", "id": new_id}, status=status.HTTP_201_CREATED)
 
-     def partial_update(self, request, pk=None):
+    def partial_update(self, request, pk=None):
         """PATCH /presences/{id}/ → mise à jour partielle d'une présence"""
         data = request.data
 
