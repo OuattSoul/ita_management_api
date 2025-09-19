@@ -7,6 +7,7 @@ from django.contrib.auth.hashers import make_password
 import datetime, resend, requests, random
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.utils.dateparse import parse_datetime
+from datetime import datetime
 
 def generate_access_code():
     """Génère un code d'accès unique à 4 chiffres."""
@@ -1237,7 +1238,7 @@ class LeaveViewSet(viewsets.ViewSet):
                                         workflow, priority, leave_status)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id;
-                """, [employee_id, leave_type, start_datetime, end_datetime, duration, workflow, priority, leave_status])
+                """, [employee_id, leave_type, start, end, duration, workflow, priority, leave_status])
                 new_id = cursor.fetchone()[0]
 
             return Response({"status": "success", "message": "Leave request created", "id": new_id}, status=status.HTTP_201_CREATED)
