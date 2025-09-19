@@ -1216,7 +1216,10 @@ class LeaveViewSet(viewsets.ViewSet):
             leave_type = data.get("leave_type")
             start_date = data.get("start_date")
             end_date = data.get("end_date")
-            duration = end_date - start_date
+            format_string = "'%Y-%m-%d"
+            start_datetime = datetime.strptime(start_date, format_string)
+            end_datetime = datetime.strptime(end_date, format_string)
+            duration = start_datetime - end_datetime
             workflow = data.get("workflow")
             priority = data.get("priority")
             leave_status = data.get("leave_status")
@@ -1230,7 +1233,7 @@ class LeaveViewSet(viewsets.ViewSet):
                                         workflow, priority, leave_status)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id;
-                """, [employee_id, leave_type, start_date, end_date, duration, workflow, priority, leave_status])
+                """, [employee_id, leave_type, start_datetime, end_datetime, duration, workflow, priority, leave_status])
                 new_id = cursor.fetchone()[0]
 
             return Response({"status": "success", "message": "Leave request created", "id": new_id}, status=status.HTTP_201_CREATED)
@@ -1245,7 +1248,7 @@ class LeaveViewSet(viewsets.ViewSet):
             leave_type = data.get("leave_type")
             start_date = data.get("start_date")
             end_date = data.get("end_date")
-            #duration = data.get("duration")
+            #duration = end_date - start_date
             workflow = data.get("workflow")
             priority = data.get("priority")
             leave_status = data.get("leave_status")
@@ -1256,7 +1259,7 @@ class LeaveViewSet(viewsets.ViewSet):
             with connection.cursor() as cursor:
                 cursor.execute("""
                     UPDATE leaves
-                    SET employee_id=%s, leave_type=%s, start_date=%s, end_date=%s, duration=%s,
+                    SET employee_id=%s, leave_type=%s, start_date=%s, end_date=%s,
                         workflow=%s, priority=%s, leave_status=%s
                     WHERE id=%s
                     RETURNING id;
