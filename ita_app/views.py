@@ -24,6 +24,185 @@ def unplunk_send_email(user_name, user_email, access_code):
         },
     )
 
+
+class JobTypeViewSet(viewsets.ViewSet):
+    """
+    CRUD pour la table jon_types (id, type_name)
+    """
+
+    def list(self, request):
+        """GET /jon_types/ → Liste des types de contrat"""
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT id, type_name FROM jon_types")
+            rows = cursor.fetchall()
+        data = [{"id": row[0], "type_name": row[1]} for row in rows]
+        return Response(data)
+
+    def retrieve(self, request, pk=None):
+        """GET /jon_types/{id}/ → Détails d’un type de contrat"""
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT id, type_name FROM jon_types WHERE id = %s", [pk])
+            row = cursor.fetchone()
+        if row:
+            return Response({"id": row[0], "type_name": row[1]})
+        return Response({"error": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    def create(self, request):
+        """POST /jon_types/ → Créer un type de contrat"""
+        type_name = request.data.get("type_name")
+        if not type_name:
+            return Response({"error": "type_name requis"}, status=status.HTTP_400_BAD_REQUEST)
+
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO jon_types (type_name) VALUES (%s) RETURNING id",
+                [type_name],
+            )
+            new_id = cursor.fetchone()[0]
+        return Response({"id": new_id, "type_name": type_name}, status=status.HTTP_201_CREATED)
+
+    def update(self, request, pk=None):
+        """PUT /jon_types/{id}/ → Modifier complètement un type de contrat"""
+        type_name = request.data.get("type_name")
+        if not type_name:
+            return Response({"error": "type_name requis"}, status=status.HTTP_400_BAD_REQUEST)
+
+        with connection.cursor() as cursor:
+            cursor.execute("UPDATE jon_types SET type_name = %s WHERE id = %s", [type_name, pk])
+        return Response({"id": pk, "type_name": type_name})
+
+    def partial_update(self, request, pk=None):
+        """PATCH /jon_types/{id}/ → Modifier partiellement un type de contrat"""
+        type_name = request.data.get("type_name")
+        if type_name:
+            with connection.cursor() as cursor:
+                cursor.execute("UPDATE jon_types SET type_name = %s WHERE id = %s", [type_name, pk])
+            return Response({"id": pk, "type_name": type_name})
+        return Response({"error": "Aucune donnée transmise"}, status=status.HTTP_400_BAD_REQUEST)
+
+    def destroy(self, request, pk=None):
+        """DELETE /jon_types/{id}/ → Supprimer un type de contrat"""
+        with connection.cursor() as cursor:
+            cursor.execute("DELETE FROM jon_types WHERE id = %s", [pk])
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+class JobTitleViewSet(viewsets.ViewSet):
+    """
+    CRUD pour jon_types
+    """
+
+    def list(self, request):
+        """GET /jon_types/ → liste des postes"""
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT id, title, service_id FROM jon_types;")
+            rows = cursor.fetchall()
+            data = [{"id": r[0], "title": r[1], "service_id": r[2]} for r in rows]
+        return Response(data)
+
+    def retrieve(self, request, pk=None):
+        """GET /jon_types/{id}/ → un poste par ID"""
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT id, title, service_id FROM jon_types WHERE id = %s;", [pk])
+            row = cursor.fetchone()
+        if row:
+            data = {"id": row[0], "title": row[1], "service_id": row[2]}
+            return Response(data)
+        return Response({"error": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    def create(self, request):
+        """POST /jon_types/ → créer un poste"""
+        data = request.data
+        title = data.get("title")
+        service_id = data.get("service_id")
+
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO jon_types (title, service_id) VALUES (%s, %s) RETURNING id;",
+                [title, service_id]
+            )
+            new_id = cursor.fetchone()[0]
+
+        return Response({"id": new_id, "title": title, "service_id": service_id}, status=status.HTTP_201_CREATED)
+
+    def update(self, request, pk=None):
+        """PUT /jon_types/{id}/ → mettre à jour un poste"""
+        data = request.data
+        title = data.get("title")
+        service_id = data.get("service_id")
+
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE jon_types SET title=%s, service_id=%s WHERE id=%s RETURNING id;",
+                [title, service_id, pk]
+            )
+            updated = cursor.fetchone()
+
+        if updated:
+            return Response({"id": pk, "title": title, "service_id": service_id})
+        return Response({"error": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    def destroy(self, request, pk=None):
+        """DELETE /jon_types/{id}/ → supprimer un poste"""
+        with connection.cursor() as cursor:
+            cursor.execute("DELETE FROM jon_types WHERE id=%s RETURNING id;", [pk])
+            deleted = cursor.fetchone()
+
+        if deleted:
+            return Response({"message": "Deleted successfully"})
+        return Response({"error": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+
+class UserRoleViewSet(viewsets.ViewSet):
+    """CRUD User Roles sans serializer"""
+
+    def list(self, request):
+        """GET /user_roles/ → liste tous les rôles"""
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT id, name, description FROM user_roles ORDER BY id;")
+            rows = cursor.fetchall()
+        roles = [{"id": r[0], "name": r[1], "description": r[2]} for r in rows]
+        return Response(roles, status=status.HTTP_200_OK)
+
+    def retrieve(self, request, pk=None):
+        """GET /user_roles/{id}/ → détail d’un rôle"""
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT id, name, description FROM user_roles WHERE id=%s;", [pk])
+            row = cursor.fetchone()
+        if not row:
+            return Response({"error": "Role not found"}, status=status.HTTP_404_NOT_FOUND)
+        role = {"id": row[0], "name": row[1], "description": row[2]}
+        return Response(role, status=status.HTTP_200_OK)
+
+    def create(self, request):
+        """POST /user_roles/ → créer un rôle"""
+        data = request.data
+        name = data.get("name")
+        description = data.get("description")
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO user_roles (name, description) VALUES (%s, %s) RETURNING id;",
+                [name, description],
+            )
+            new_id = cursor.fetchone()[0]
+        return Response({"id": new_id, "name": name, "description": description}, status=status.HTTP_201_CREATED)
+
+    def update(self, request, pk=None):
+        """PUT /user_roles/{id}/ → mettre à jour un rôle"""
+        data = request.data
+        name = data.get("name")
+        description = data.get("description")
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE user_roles SET name=%s, description=%s WHERE id=%s;",
+                [name, description, pk],
+            )
+        return Response({"id": pk, "name": name, "description": description}, status=status.HTTP_200_OK)
+
+    def destroy(self, request, pk=None):
+        """DELETE /user_roles/{id}/ → supprimer un rôle"""
+        with connection.cursor() as cursor:
+            cursor.execute("DELETE FROM user_roles WHERE id=%s;", [pk])
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 class UserViewSet(viewsets.ViewSet):
     """
     ViewSet DRF pour gérer les utilisateurs via SQL direct.
@@ -34,9 +213,7 @@ class UserViewSet(viewsets.ViewSet):
         try:
             with connection.cursor() as cursor:
                 cursor.execute("""
-                    SELECT id, user_role_id, user_id, email_prof, job_title_id,
-                           affected_at_service_id, hire_date, job_type_id, profile_status,
-                           created_at, updated_at
+                    SELECT id, user_role_id, created_at, updated_at
                     FROM users
                     ORDER BY id;
                 """)
@@ -46,15 +223,8 @@ class UserViewSet(viewsets.ViewSet):
                     users.append({
                         "id": row[0],
                         "user_role_id": row[1],
-                        "user_id": row[2],
-                        "email_prof": row[3],
-                        "job_title_id": row[4],
-                        "affected_at_service_id": row[5],
-                        "hire_date": row[6],
-                        "job_type_id": row[7],
-                        "profile_status": row[8],
-                        "created_at": row[9],
-                        "updated_at": row[10],
+                        "created_at": row[2],
+                        "updated_at": row[3],
                     })
             return Response({"status": "success", "users": users})
         except Exception as e:
@@ -494,7 +664,7 @@ class RecruitmentRequestViewSet(viewsets.ViewSet):
                            jty.type_name AS job_type
                     FROM recruitment_requests rr
                     JOIN request_service s ON rr.service_id = s.id
-                    JOIN job_titles jt ON rr.job_title_id = jt.id
+                    JOIN jon_types jt ON rr.job_title_id = jt.id
                     JOIN job_types jty ON rr.job_type_id = jty.id
                     ORDER BY rr.id;
                 """)
@@ -554,7 +724,7 @@ class RecruitmentRequestViewSet(viewsets.ViewSet):
                            jty.type_name AS job_type
                     FROM recruitment_requests rr
                     JOIN request_service s ON rr.service_id = s.id
-                    JOIN job_titles jt ON rr.job_title_id = jt.id
+                    JOIN jon_types jt ON rr.job_title_id = jt.id
                     JOIN job_types jty ON rr.job_type_id = jty.id
                     WHERE rr.id = %s;
                 """, [pk])
