@@ -1223,7 +1223,7 @@ class LeaveViewSet(viewsets.ViewSet):
             #duration = start_datetime - end_datetime
             start = datetime.fromisoformat(start_date)
             end = datetime.fromisoformat(end_date)
-            duration = (end - start).days + 1  # +1 si inclusif
+            #duration = (end - start).days + 1  # +1 si inclusif
             
             workflow = data.get("workflow")
             priority = data.get("priority")
@@ -1234,11 +1234,11 @@ class LeaveViewSet(viewsets.ViewSet):
 
             with connection.cursor() as cursor:
                 cursor.execute("""
-                    INSERT INTO leaves (employee_id, leave_type, start_date, end_date, duration,
+                    INSERT INTO leaves (employee_id, leave_type, start_date, end_date,
                                         workflow, priority, leave_status)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id;
-                """, [employee_id, leave_type, start, end, duration, workflow, priority, leave_status])
+                """, [employee_id, leave_type, start, end, workflow, priority, leave_status])
                 new_id = cursor.fetchone()[0]
 
             return Response({"status": "success", "message": "Leave request created", "id": new_id}, status=status.HTTP_201_CREATED)
@@ -1683,7 +1683,92 @@ class PurchaseRequestViewSet(viewsets.ViewSet):
             cursor.execute("DELETE FROM purchase_requests WHERE id=%s", [pk])
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+class MemoViewSet(viewsets.ViewSet):
+    """
+    CRUD pour la table 'memo' en SQL brut
+    """
 
+    def list(self, request):
+        """GET /memo/ → lister tous les mémos"""
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT * FROM memo ORDER BY id")
+            columns = [col[0] for col in cursor.description]
+            data = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        return Response(data)
+
+    def retrieve(self, request, pk=None):
+        """GET /memo/{id}/ → récupérer un mémo par ID"""
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT * FROM memo WHERE id = %s", [pk])
+            row = cursor.fetchone()
+            if row is None:
+                return Response({"detail": "Mémo non trouvé"}, status=status.HTTP_404_NOT_FOUND)
+            columns = [col[0] for col in cursor.description]
+            data = dict(zip(columns, row))
+        return Response(data)
+
+    def create(self, request):
+        """POST /memo/ → créer un nouveau mémo"""
+        data = request.data
+        performance = data.get("performance")
+        on_time = data.get("on_time")
+        points_positifs = data.get("points_positifs", "")
+        difficultees_rencontrees = data.get("difficultees_rencontrees", "")
+
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO memo (performance, on_time, points_positifs, difficultees_rencontrees, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, NOW(), NOW())
+                RETURNING id
+            """, [performance, on_time, points_positifs, difficultees_rencontrees])
+            new_id = cursor.fetchone()[0]
+
+        return Response({"id": new_id}, status=status.HTTP_201_CREATED)
+
+    def update(self, request, pk=None):
+        """PUT /memo/{id}/ → mettre à jour un mémo entier"""
+        data = request.data
+        performance = data.get("performance")
+        on_time = data.get("on_time")
+        points_positifs = data.get("points_positifs", "")
+        difficultees_rencontrees = data.get("difficultees_rencontrees", "")
+
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                UPDATE memo
+                SET performance=%s, on_time=%s, points_positifs=%s, difficultees_rencontrees=%s, updated_at=NOW()
+                WHERE id=%s
+            """, [performance, on_time, points_positifs, difficultees_rencontrees, pk])
+
+        return Response({"detail": "Mémo mis à jour"}, status=status.HTTP_200_OK)
+
+    def partial_update(self, request, pk=None):
+        """PATCH /memo/{id}/ → mise à jour partielle d'un mémo"""
+        data = request.data
+        fields = []
+        values = []
+
+        for key in ["performance", "on_time", "points_positifs", "difficultees_rencontrees"]:
+            if key in data:
+                fields.append(f"{key}=%s")
+                values.append(data[key])
+
+        if not fields:
+            return Response({"detail": "Aucun champ à mettre à jour"}, status=status.HTTP_400_BAD_REQUEST)
+
+        values.append(pk)
+        set_clause = ", ".join(fields) + ", updated_at=NOW()"
+
+        with connection.cursor() as cursor:
+            cursor.execute(f"UPDATE memo SET {set_clause} WHERE id=%s", values)
+
+        return Response({"detail": "Mémo partiellement mis à jour"}, status=status.HTTP_200_OK)
+
+    def destroy(self, request, pk=None):
+        """DELETE /memo/{id}/ → supprimer un mémo"""
+        with connection.cursor() as cursor:
+            cursor.execute("DELETE FROM memo WHERE id=%s", [pk])
+        return Response({"detail": "Mémo supprimé"}, status=status.HTTP_204_NO_CONTENT)
 
 
 
