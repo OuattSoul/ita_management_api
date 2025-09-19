@@ -634,7 +634,6 @@ class EmployeeViewSet(viewsets.ViewSet):
         except Exception as e:
             return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
 class RecruitmentRequestViewSet(viewsets.ViewSet):
     """
     ViewSet CRUD complet pour la table 'recruitment_requests' via SQL direct.
@@ -849,8 +848,6 @@ class RecruitmentRequestViewSet(viewsets.ViewSet):
         except Exception as e:
             return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
-
 class EmployeeAttendanceViewSet(viewsets.ViewSet):
     """CRUD complet pour la table presences"""
 
@@ -993,7 +990,6 @@ class EmployeeAttendanceViewSet(viewsets.ViewSet):
             return Response({"status": "success", "message": "Record partially updated", "id": pk})
         except Exception as e:
             return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 class MissionViewSet(viewsets.ViewSet):
     """CRUD complet pour la table missions"""
@@ -1317,7 +1313,6 @@ class LeaveViewSet(viewsets.ViewSet):
         except Exception as e:
             return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
 class PresenceViewSet(viewsets.ViewSet):
     """CRUD pour la table presences"""
 
@@ -1364,6 +1359,42 @@ class PresenceViewSet(viewsets.ViewSet):
 
         return Response({"status": "success", "id": new_id}, status=status.HTTP_201_CREATED)
 
+     def partial_update(self, request, pk=None):
+        """PATCH /presences/{id}/ → mise à jour partielle d'une présence"""
+        data = request.data
+
+        # Récupérer la présence existante
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT * FROM presences WHERE id = %s", [pk])
+            row = cursor.fetchone()
+            if not row:
+                return Response({"status": "error", "message": "Présence non trouvée"}, status=status.HTTP_404_NOT_FOUND)
+            columns = [col[0] for col in cursor.description]
+            presence = dict(zip(columns, row))
+
+        # Préparer les nouvelles valeurs (si elles ne sont pas fournies, garder l'ancienne valeur)
+        employee_id = data.get("employee_id", presence["employee_id"])
+        site = data.get("site", presence["site"])
+        arrival = parse_datetime(data.get("arrival")) if data.get("arrival") else presence["arrival"]
+        departure = parse_datetime(data.get("departure")) if data.get("departure") else presence["departure"]
+        pointage_status = data.get("pointage_status", presence["pointage_status"])
+
+        # Recalculer le temps travaillé si arrival et departure sont présents
+        if arrival and departure:
+            time_worked = int((departure - arrival).total_seconds() / 60)
+        else:
+            time_worked = presence.get("time_worked", 0)
+
+        # Mettre à jour la présence
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                UPDATE presences
+                SET employee_id=%s, site=%s, arrival=%s, departure=%s, time_worked=%s, pointage_status=%s
+                WHERE id=%s
+            """, [employee_id, site, arrival, departure, time_worked, pointage_status, pk])
+
+        return Response({"status": "success"}, status=status.HTTP_200_OK)
+
     def update(self, request, pk=None):
         """PUT /presences/{id}/ → mettre à jour une présence"""
         data = request.data
@@ -1393,7 +1424,6 @@ class PresenceViewSet(viewsets.ViewSet):
         with connection.cursor() as cursor:
             cursor.execute("DELETE FROM presences WHERE id = %s", [pk])
         return Response({"status": "success"}, status=status.HTTP_204_NO_CONTENT)
-
 
 class VehiculeViewSet(viewsets.ViewSet):
 
@@ -1477,7 +1507,6 @@ class VehiculeViewSet(viewsets.ViewSet):
 
 
 # Demande d'achat
-
 class CategoryViewSet(viewsets.ViewSet):
     """CRUD pour les catégories"""
 
