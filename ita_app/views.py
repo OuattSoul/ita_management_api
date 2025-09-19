@@ -1389,7 +1389,85 @@ class PresenceViewSet(viewsets.ViewSet):
         return Response({"status": "success"}, status=status.HTTP_204_NO_CONTENT)
 
 
+class VehiculeViewSet(viewsets.ViewSet):
 
+    def list(self, request):
+        """GET /vehicules/ → liste des véhicules"""
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT * FROM administration_vehicules;")
+            cols = [col[0] for col in cursor.description]
+            rows = cursor.fetchall()
+        data = [dict(zip(cols, row)) for row in rows]
+        return Response(data)
+
+    def retrieve(self, request, pk=None):
+        """GET /vehicules/{id}/ → détail d'un véhicule"""
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT * FROM administration_vehicules WHERE id = %s;", [pk])
+            row = cursor.fetchone()
+            if not row:
+                return Response({"error": "Véhicule introuvable"}, status=404)
+            cols = [col[0] for col in cursor.description]
+        return Response(dict(zip(cols, row)))
+
+    def create(self, request):
+        """POST /vehicules/ → créer un véhicule"""
+        data = request.data
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO administration_vehicules
+                (marque, matricule, couleur, kilometrage,
+                 assurance_expiration, statut_assurance,
+                 controle_technique_expiration, statut_controle_technique,
+                 carte_grise_expiration, statut_carte_grise,
+                 km_limite_maintenance, couts_mensuels)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                RETURNING id;
+            """, [
+                data.get("marque"),
+                data.get("matricule"),
+                data.get("couleur"),
+                data.get("kilometrage"),
+                data.get("assurance_expiration"),
+                data.get("statut_assurance"),
+                data.get("controle_technique_expiration"),
+                data.get("statut_controle_technique"),
+                data.get("carte_grise_expiration"),
+                data.get("statut_carte_grise"),
+                data.get("km_limite_maintenance"),
+                data.get("couts_mensuels"),
+            ])
+            new_id = cursor.fetchone()[0]
+        return Response({"id": new_id, "message": "Véhicule créé"}, status=status.HTTP_201_CREATED)
+
+    def update(self, request, pk=None):
+        """PUT /vehicules/{id}/ → mise à jour complète"""
+        data = request.data
+        set_clause = ", ".join([f"{k} = %s" for k in data.keys()])
+        values = list(data.values()) + [pk]
+        with connection.cursor() as cursor:
+            cursor.execute(f"UPDATE administration_vehicules SET {set_clause} WHERE id = %s;", values)
+        return Response({"message": "Véhicule mis à jour (PUT)"})
+
+    def partial_update(self, request, pk=None):
+        """PATCH /vehicules/{id}/ → mise à jour partielle"""
+        data = request.data
+        if not data:
+            return Response({"error": "Aucune donnée transmise"}, status=400)
+
+        set_clause = ", ".join([f"{k} = %s" for k in data.keys()])
+        values = list(data.values()) + [pk]
+
+        with connection.cursor() as cursor:
+            cursor.execute(f"UPDATE administration_vehicules SET {set_clause} WHERE id = %s;", values)
+
+        return Response({"message": "Véhicule mis à jour (PATCH)"})
+
+    def destroy(self, request, pk=None):
+        """DELETE /vehicules/{id}/ → supprimer un véhicule"""
+        with connection.cursor() as cursor:
+            cursor.execute("DELETE FROM administration_vehicules WHERE id = %s;", [pk])
+        return Response({"message": "Véhicule supprimé"}, status=204)
 
 
 
