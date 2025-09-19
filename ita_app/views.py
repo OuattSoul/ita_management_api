@@ -1470,9 +1470,140 @@ class VehiculeViewSet(viewsets.ViewSet):
         return Response({"message": "Véhicule supprimé"}, status=204)
 
 
+# Demande d'achat
 
+class CategoryViewSet(viewsets.ViewSet):
+    """CRUD pour les catégories"""
 
+    def list(self, request):
+        """GET /purchase/categories/ → liste toutes les catégories"""
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT id, name, description FROM categories")
+            rows = cursor.fetchall()
+            data = [{"id": r[0], "name": r[1], "description": r[2]} for r in rows]
+        return Response(data)
 
+    def retrieve(self, request, pk=None):
+        """GET /purchase/categories/{id}/ → détail d'une catégorie"""
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT id, name, description FROM categories WHERE id=%s", [pk])
+            row = cursor.fetchone()
+            if not row:
+                return Response({"error": "Category not found"}, status=status.HTTP_404_NOT_FOUND)
+            data = {"id": row[0], "name": row[1], "description": row[2]}
+        return Response(data)
+
+    def create(self, request):
+        """POST /purchase/categories/ → créer une catégorie"""
+        name = request.data.get("name")
+        description = request.data.get("description", "")
+        with connection.cursor() as cursor:
+            cursor.execute("INSERT INTO categories (name, description) VALUES (%s, %s) RETURNING id", [name, description])
+            category_id = cursor.fetchone()[0]
+        return Response({"id": category_id, "name": name, "description": description}, status=status.HTTP_201_CREATED)
+
+    def update(self, request, pk=None):
+        """PUT /purchase/categories/{id}/ → modifier entièrement une catégorie"""
+        name = request.data.get("name")
+        description = request.data.get("description", "")
+        with connection.cursor() as cursor:
+            cursor.execute("UPDATE categories SET name=%s, description=%s WHERE id=%s", [name, description, pk])
+        return Response({"id": pk, "name": name, "description": description})
+
+    def destroy(self, request, pk=None):
+        """DELETE /purchase/categories/{id}/ → supprimer une catégorie"""
+        with connection.cursor() as cursor:
+            cursor.execute("DELETE FROM categories WHERE id=%s", [pk])
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+class PurchaseRequestViewSet(viewsets.ViewSet):
+    """CRUD pour les demandes d'achat"""
+
+    def list(self, request):
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT id, category_id, estimated_budget, request_title, request_description, justification 
+                FROM purchase_requests
+            """)
+            rows = cursor.fetchall()
+            data = [
+                {
+                    "id": r[0],
+                    "category_id": r[1],
+                    "estimated_budget": r[2],
+                    "request_title": r[3],
+                    "request_description": r[4],
+                    "justification": r[5],
+                } for r in rows
+            ]
+        return Response(data)
+
+    def retrieve(self, request, pk=None):
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT id, category_id, estimated_budget, request_title, request_description, justification
+                FROM purchase_requests WHERE id=%s
+            """, [pk])
+            row = cursor.fetchone()
+            if not row:
+                return Response({"error": "Purchase request not found"}, status=status.HTTP_404_NOT_FOUND)
+            data = {
+                "id": row[0],
+                "category_id": row[1],
+                "estimated_budget": row[2],
+                "request_title": row[3],
+                "request_description": row[4],
+                "justification": row[5],
+            }
+        return Response(data)
+
+    def create(self, request):
+        category_id = request.data.get("category_id")
+        estimated_budget = request.data.get("estimated_budget")
+        request_title = request.data.get("request_title")
+        request_description = request.data.get("request_description", "")
+        justification = request.data.get("justification", "")
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO purchase_requests 
+                (category_id, estimated_budget, request_title, request_description, justification)
+                VALUES (%s, %s, %s, %s, %s) RETURNING id
+            """, [category_id, estimated_budget, request_title, request_description, justification])
+            pr_id = cursor.fetchone()[0]
+        return Response({
+            "id": pr_id,
+            "category_id": category_id,
+            "estimated_budget": estimated_budget,
+            "request_title": request_title,
+            "request_description": request_description,
+            "justification": justification,
+        }, status=status.HTTP_201_CREATED)
+
+    def update(self, request, pk=None):
+        category_id = request.data.get("category_id")
+        estimated_budget = request.data.get("estimated_budget")
+        request_title = request.data.get("request_title")
+        request_description = request.data.get("request_description", "")
+        justification = request.data.get("justification", "")
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                UPDATE purchase_requests
+                SET category_id=%s, estimated_budget=%s, request_title=%s, request_description=%s, justification=%s
+                WHERE id=%s
+            """, [category_id, estimated_budget, request_title, request_description, justification, pk])
+        return Response({
+            "id": pk,
+            "category_id": category_id,
+            "estimated_budget": estimated_budget,
+            "request_title": request_title,
+            "request_description": request_description,
+            "justification": justification,
+        })
+
+    def destroy(self, request, pk=None):
+        with connection.cursor() as cursor:
+            cursor.execute("DELETE FROM purchase_requests WHERE id=%s", [pk])
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 
