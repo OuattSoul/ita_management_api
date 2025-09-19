@@ -1199,10 +1199,9 @@ class LeaveViewSet(viewsets.ViewSet):
                         "leave_type": row[2],
                         "start_date": row[3],
                         "end_date": row[4],
-                        "end_date": row[5],
-                        "duration": row[6],
-                        "workflow": row[7],
-                        "priority": row[8],
+                        "duration": row[5],
+                        "workflow": row[6],
+                        "priority": row[7],
                         "leave_status": row[9]
                     })
             return Response({"status": "success", "data": result})
