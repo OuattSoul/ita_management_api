@@ -31,24 +31,24 @@ class JobTypeViewSet(viewsets.ViewSet):
     """
 
     def list(self, request):
-        """GET /job_types/ → Liste des types de contrat"""
+        """GET /job/types/ → Liste des types de contrat"""
         with connection.cursor() as cursor:
-            cursor.execute("SELECT id, type_name FROM job_types")
+            cursor.execute("SELECT * FROM job_types")
             rows = cursor.fetchall()
         data = [{"id": row[0], "type_name": row[1]} for row in rows]
         return Response(data)
 
     def retrieve(self, request, pk=None):
-        """GET /job_types/{id}/ → Détails d’un type de contrat"""
+        """GET /job/types/{id}/ → Détails d’un type de contrat"""
         with connection.cursor() as cursor:
-            cursor.execute("SELECT id, type_name FROM job_types WHERE id = %s", [pk])
+            cursor.execute("SELECT * FROM job_types WHERE id = %s", [pk])
             row = cursor.fetchone()
         if row:
             return Response({"id": row[0], "type_name": row[1]})
         return Response({"error": "Not found"}, status=status.HTTP_404_NOT_FOUND)
 
     def create(self, request):
-        """POST /job_types/ → Créer un type de contrat"""
+        """POST /job/types/ → Créer un type de contrat"""
         type_name = request.data.get("type_name")
         if not type_name:
             return Response({"error": "type_name requis"}, status=status.HTTP_400_BAD_REQUEST)
@@ -62,7 +62,7 @@ class JobTypeViewSet(viewsets.ViewSet):
         return Response({"id": new_id, "type_name": type_name}, status=status.HTTP_201_CREATED)
 
     def update(self, request, pk=None):
-        """PUT /job_types/{id}/ → Modifier complètement un type de contrat"""
+        """PUT /job/types/{id}/ → Modifier complètement un type de contrat"""
         type_name = request.data.get("type_name")
         if not type_name:
             return Response({"error": "type_name requis"}, status=status.HTTP_400_BAD_REQUEST)
@@ -72,7 +72,7 @@ class JobTypeViewSet(viewsets.ViewSet):
         return Response({"id": pk, "type_name": type_name})
 
     def partial_update(self, request, pk=None):
-        """PATCH /job_types/{id}/ → Modifier partiellement un type de contrat"""
+        """PATCH /job/types/{id}/ → Modifier partiellement un type de contrat"""
         type_name = request.data.get("type_name")
         if type_name:
             with connection.cursor() as cursor:
@@ -81,7 +81,7 @@ class JobTypeViewSet(viewsets.ViewSet):
         return Response({"error": "Aucune donnée transmise"}, status=status.HTTP_400_BAD_REQUEST)
 
     def destroy(self, request, pk=None):
-        """DELETE /job_types/{id}/ → Supprimer un type de contrat"""
+        """DELETE /job/types/{id}/ → Supprimer un type de contrat"""
         with connection.cursor() as cursor:
             cursor.execute("DELETE FROM job_types WHERE id = %s", [pk])
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -92,17 +92,17 @@ class JobTitleViewSet(viewsets.ViewSet):
     """
 
     def list(self, request):
-        """GET /job_types/ → liste des postes"""
+        """GET /job/titles/ → liste des postes"""
         with connection.cursor() as cursor:
-            cursor.execute("SELECT id, title, service_id FROM job_titles;")
+            cursor.execute("SELECT * FROM job_titles;")
             rows = cursor.fetchall()
             data = [{"id": r[0], "title": r[1], "service_id": r[2]} for r in rows]
         return Response(data)
 
     def retrieve(self, request, pk=None):
-        """GET /job_types/{id}/ → un poste par ID"""
+        """GET /job/titles/{id}/ → un poste par ID"""
         with connection.cursor() as cursor:
-            cursor.execute("SELECT id, title, service_id FROM job_titles WHERE id = %s;", [pk])
+            cursor.execute("SELECT * FROM job_titles WHERE id = %s;", [pk])
             row = cursor.fetchone()
         if row:
             data = {"id": row[0], "title": row[1], "service_id": row[2]}
@@ -110,7 +110,7 @@ class JobTitleViewSet(viewsets.ViewSet):
         return Response({"error": "Not found"}, status=status.HTTP_404_NOT_FOUND)
 
     def create(self, request):
-        """POST /job_types/ → créer un poste"""
+        """POST /job/titles/ → créer un poste"""
         data = request.data
         title = data.get("title")
         service_id = data.get("service_id")
@@ -125,7 +125,7 @@ class JobTitleViewSet(viewsets.ViewSet):
         return Response({"id": new_id, "title": title, "service_id": service_id}, status=status.HTTP_201_CREATED)
 
     def update(self, request, pk=None):
-        """PUT /job_types/{id}/ → mettre à jour un poste"""
+        """PUT /job/titles/{id}/ → mettre à jour un poste"""
         data = request.data
         title = data.get("title")
         service_id = data.get("service_id")
@@ -142,7 +142,7 @@ class JobTitleViewSet(viewsets.ViewSet):
         return Response({"error": "Not found"}, status=status.HTTP_404_NOT_FOUND)
 
     def destroy(self, request, pk=None):
-        """DELETE /job_types/{id}/ → supprimer un poste"""
+        """DELETE /job/titles/{id}/ → supprimer un poste"""
         with connection.cursor() as cursor:
             cursor.execute("DELETE FROM job_titles WHERE id=%s RETURNING id;", [pk])
             deleted = cursor.fetchone()
@@ -843,77 +843,6 @@ class RecruitmentRequestViewSet(viewsets.ViewSet):
         except Exception as e:
                     return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
-class JobTitleViewSet(viewsets.ViewSet):
-    """
-    CRUD complet pour la table job_title via SQL direct
-    """
-
-    def list(self, request):
-        """GET /job-titles/ → Liste des job titles"""
-        try:
-            with connection.cursor() as cursor:
-                cursor.execute("SELECT id, name FROM job_title ORDER BY id ASC;")
-                rows = cursor.fetchall()
-                data = [{"id": row[0], "name": row[1]} for row in rows]
-            return Response(data, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-    def retrieve(self, request, pk=None):
-        """GET /job-titles/{id}/ → Récupérer un job title"""
-        try:
-            with connection.cursor() as cursor:
-                cursor.execute("SELECT id, name FROM job_title WHERE id = %s;", [pk])
-                row = cursor.fetchone()
-                if not row:
-                    return Response({"error": "Not found"}, status=status.HTTP_404_NOT_FOUND)
-                data = {"id": row[0], "name": row[1]}
-            return Response(data, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-    def create(self, request):
-        """POST /job-titles/ → Créer un job title"""
-        name = request.data.get("name")
-        if not name:
-            return Response({"error": "Le champ 'name' est requis"}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            with connection.cursor() as cursor:
-                cursor.execute("INSERT INTO job_title (name) VALUES (%s) RETURNING id;", [name])
-                new_id = cursor.fetchone()[0]
-            return Response({"id": new_id, "name": name}, status=status.HTTP_201_CREATED)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-    def update(self, request, pk=None):
-        """PUT /job-titles/{id}/ → Modifier un job title"""
-        name = request.data.get("name")
-        if not name:
-            return Response({"error": "Le champ 'name' est requis"}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            with connection.cursor() as cursor:
-                cursor.execute("UPDATE job_title SET name = %s WHERE id = %s RETURNING id;", [name, pk])
-                row = cursor.fetchone()
-                if not row:
-                    return Response({"error": "Not found"}, status=status.HTTP_404_NOT_FOUND)
-            return Response({"id": pk, "name": name}, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-    def destroy(self, request, pk=None):
-        """DELETE /job-titles/{id}/ → Supprimer un job title"""
-        try:
-            with connection.cursor() as cursor:
-                cursor.execute("DELETE FROM job_title WHERE id = %s RETURNING id;", [pk])
-                row = cursor.fetchone()
-                if not row:
-                    return Response({"error": "Not found"}, status=status.HTTP_404_NOT_FOUND)
-            return Response({"message": "Supprimé avec succès"}, status=status.HTTP_204_NO_CONTENT)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class EmployeeAttendanceViewSet(viewsets.ViewSet):
