@@ -1196,13 +1196,14 @@ class LeaveViewSet(viewsets.ViewSet):
                     result.append({
                         "id": row[0],
                         "employee_id": row[1],
-                        "leave_status": row[2],
-                        "leave_type": row[3],
-                        "start_date": row[4],
+                        "leave_type": row[2],
+                        "start_date": row[3],
+                        "end_date": row[4],
                         "end_date": row[5],
                         "duration": row[6],
                         "workflow": row[7],
-                        "priority": row[8]
+                        "priority": row[8],
+                        "leave_status": row[9]
                     })
             return Response({"status": "success", "data": result})
         except Exception as e:
