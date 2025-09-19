@@ -151,7 +151,7 @@ class JobTitleViewSet(viewsets.ViewSet):
             updated = cursor.fetchone()
 
         return Response({"id": pk, "title": new_title, "service_id": new_service_id})
-        
+
     def update(self, request, pk=None):
         """PUT /job/titles/{id}/ → mettre à jour un poste"""
         data = request.data
@@ -185,33 +185,33 @@ class UserRoleViewSet(viewsets.ViewSet):
     def list(self, request):
         """GET /user_roles/ → liste tous les rôles"""
         with connection.cursor() as cursor:
-            cursor.execute("SELECT id, name, description FROM user_roles ORDER BY id;")
+            cursor.execute("SELECT id, role_name, description FROM user_roles ORDER BY id;")
             rows = cursor.fetchall()
-        roles = [{"id": r[0], "name": r[1], "description": r[2]} for r in rows]
+        roles = [{"id": r[0], "role_name": r[1], "description": r[2]} for r in rows]
         return Response(roles, status=status.HTTP_200_OK)
 
     def retrieve(self, request, pk=None):
         """GET /user_roles/{id}/ → détail d’un rôle"""
         with connection.cursor() as cursor:
-            cursor.execute("SELECT id, name, description FROM user_roles WHERE id=%s;", [pk])
+            cursor.execute("SELECT id, role_name, description FROM user_roles WHERE id=%s;", [pk])
             row = cursor.fetchone()
         if not row:
             return Response({"error": "Role not found"}, status=status.HTTP_404_NOT_FOUND)
-        role = {"id": row[0], "name": row[1], "description": row[2]}
+        role = {"id": row[0], "role_name": row[1], "description": row[2]}
         return Response(role, status=status.HTTP_200_OK)
 
     def create(self, request):
         """POST /user_roles/ → créer un rôle"""
         data = request.data
-        name = data.get("name")
+        role_name = data.get("role_name")
         description = data.get("description")
         with connection.cursor() as cursor:
             cursor.execute(
-                "INSERT INTO user_roles (name, description) VALUES (%s, %s) RETURNING id;",
-                [name, description],
+                "INSERT INTO user_roles (role_name, description) VALUES (%s, %s) RETURNING id;",
+                [role_name, description],
             )
             new_id = cursor.fetchone()[0]
-        return Response({"id": new_id, "name": name, "description": description}, status=status.HTTP_201_CREATED)
+        return Response({"id": new_id, "role_name": role_name, "description": description}, status=status.HTTP_201_CREATED)
 
     def update(self, request, pk=None):
         """PUT /user_roles/{id}/ → mettre à jour un rôle"""
