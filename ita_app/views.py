@@ -27,82 +27,82 @@ def unplunk_send_email(user_name, user_email, access_code):
 
 class JobTypeViewSet(viewsets.ViewSet):
     """
-    CRUD pour la table jon_types (id, type_name)
+    CRUD pour la table job_types (id, type_name)
     """
 
     def list(self, request):
-        """GET /jon_types/ → Liste des types de contrat"""
+        """GET /job_types/ → Liste des types de contrat"""
         with connection.cursor() as cursor:
-            cursor.execute("SELECT id, type_name FROM jon_types")
+            cursor.execute("SELECT id, type_name FROM job_types")
             rows = cursor.fetchall()
         data = [{"id": row[0], "type_name": row[1]} for row in rows]
         return Response(data)
 
     def retrieve(self, request, pk=None):
-        """GET /jon_types/{id}/ → Détails d’un type de contrat"""
+        """GET /job_types/{id}/ → Détails d’un type de contrat"""
         with connection.cursor() as cursor:
-            cursor.execute("SELECT id, type_name FROM jon_types WHERE id = %s", [pk])
+            cursor.execute("SELECT id, type_name FROM job_types WHERE id = %s", [pk])
             row = cursor.fetchone()
         if row:
             return Response({"id": row[0], "type_name": row[1]})
         return Response({"error": "Not found"}, status=status.HTTP_404_NOT_FOUND)
 
     def create(self, request):
-        """POST /jon_types/ → Créer un type de contrat"""
+        """POST /job_types/ → Créer un type de contrat"""
         type_name = request.data.get("type_name")
         if not type_name:
             return Response({"error": "type_name requis"}, status=status.HTTP_400_BAD_REQUEST)
 
         with connection.cursor() as cursor:
             cursor.execute(
-                "INSERT INTO jon_types (type_name) VALUES (%s) RETURNING id",
+                "INSERT INTO job_types (type_name) VALUES (%s) RETURNING id",
                 [type_name],
             )
             new_id = cursor.fetchone()[0]
         return Response({"id": new_id, "type_name": type_name}, status=status.HTTP_201_CREATED)
 
     def update(self, request, pk=None):
-        """PUT /jon_types/{id}/ → Modifier complètement un type de contrat"""
+        """PUT /job_types/{id}/ → Modifier complètement un type de contrat"""
         type_name = request.data.get("type_name")
         if not type_name:
             return Response({"error": "type_name requis"}, status=status.HTTP_400_BAD_REQUEST)
 
         with connection.cursor() as cursor:
-            cursor.execute("UPDATE jon_types SET type_name = %s WHERE id = %s", [type_name, pk])
+            cursor.execute("UPDATE job_types SET type_name = %s WHERE id = %s", [type_name, pk])
         return Response({"id": pk, "type_name": type_name})
 
     def partial_update(self, request, pk=None):
-        """PATCH /jon_types/{id}/ → Modifier partiellement un type de contrat"""
+        """PATCH /job_types/{id}/ → Modifier partiellement un type de contrat"""
         type_name = request.data.get("type_name")
         if type_name:
             with connection.cursor() as cursor:
-                cursor.execute("UPDATE jon_types SET type_name = %s WHERE id = %s", [type_name, pk])
+                cursor.execute("UPDATE job_types SET type_name = %s WHERE id = %s", [type_name, pk])
             return Response({"id": pk, "type_name": type_name})
         return Response({"error": "Aucune donnée transmise"}, status=status.HTTP_400_BAD_REQUEST)
 
     def destroy(self, request, pk=None):
-        """DELETE /jon_types/{id}/ → Supprimer un type de contrat"""
+        """DELETE /job_types/{id}/ → Supprimer un type de contrat"""
         with connection.cursor() as cursor:
-            cursor.execute("DELETE FROM jon_types WHERE id = %s", [pk])
+            cursor.execute("DELETE FROM job_types WHERE id = %s", [pk])
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 class JobTitleViewSet(viewsets.ViewSet):
     """
-    CRUD pour jon_types
+    CRUD pour job_types
     """
 
     def list(self, request):
-        """GET /jon_types/ → liste des postes"""
+        """GET /job_types/ → liste des postes"""
         with connection.cursor() as cursor:
-            cursor.execute("SELECT id, title, service_id FROM jon_types;")
+            cursor.execute("SELECT id, title, service_id FROM job_titles;")
             rows = cursor.fetchall()
             data = [{"id": r[0], "title": r[1], "service_id": r[2]} for r in rows]
         return Response(data)
 
     def retrieve(self, request, pk=None):
-        """GET /jon_types/{id}/ → un poste par ID"""
+        """GET /job_types/{id}/ → un poste par ID"""
         with connection.cursor() as cursor:
-            cursor.execute("SELECT id, title, service_id FROM jon_types WHERE id = %s;", [pk])
+            cursor.execute("SELECT id, title, service_id FROM job_titles WHERE id = %s;", [pk])
             row = cursor.fetchone()
         if row:
             data = {"id": row[0], "title": row[1], "service_id": row[2]}
@@ -110,14 +110,14 @@ class JobTitleViewSet(viewsets.ViewSet):
         return Response({"error": "Not found"}, status=status.HTTP_404_NOT_FOUND)
 
     def create(self, request):
-        """POST /jon_types/ → créer un poste"""
+        """POST /job_types/ → créer un poste"""
         data = request.data
         title = data.get("title")
         service_id = data.get("service_id")
 
         with connection.cursor() as cursor:
             cursor.execute(
-                "INSERT INTO jon_types (title, service_id) VALUES (%s, %s) RETURNING id;",
+                "INSERT INTO job_titles (title, service_id) VALUES (%s, %s) RETURNING id;",
                 [title, service_id]
             )
             new_id = cursor.fetchone()[0]
@@ -125,14 +125,14 @@ class JobTitleViewSet(viewsets.ViewSet):
         return Response({"id": new_id, "title": title, "service_id": service_id}, status=status.HTTP_201_CREATED)
 
     def update(self, request, pk=None):
-        """PUT /jon_types/{id}/ → mettre à jour un poste"""
+        """PUT /job_types/{id}/ → mettre à jour un poste"""
         data = request.data
         title = data.get("title")
         service_id = data.get("service_id")
 
         with connection.cursor() as cursor:
             cursor.execute(
-                "UPDATE jon_types SET title=%s, service_id=%s WHERE id=%s RETURNING id;",
+                "UPDATE job_titles SET title=%s, service_id=%s WHERE id=%s RETURNING id;",
                 [title, service_id, pk]
             )
             updated = cursor.fetchone()
@@ -142,9 +142,9 @@ class JobTitleViewSet(viewsets.ViewSet):
         return Response({"error": "Not found"}, status=status.HTTP_404_NOT_FOUND)
 
     def destroy(self, request, pk=None):
-        """DELETE /jon_types/{id}/ → supprimer un poste"""
+        """DELETE /job_types/{id}/ → supprimer un poste"""
         with connection.cursor() as cursor:
-            cursor.execute("DELETE FROM jon_types WHERE id=%s RETURNING id;", [pk])
+            cursor.execute("DELETE FROM job_titles WHERE id=%s RETURNING id;", [pk])
             deleted = cursor.fetchone()
 
         if deleted:
@@ -664,7 +664,7 @@ class RecruitmentRequestViewSet(viewsets.ViewSet):
                            jty.type_name AS job_type
                     FROM recruitment_requests rr
                     JOIN request_service s ON rr.service_id = s.id
-                    JOIN jon_types jt ON rr.job_title_id = jt.id
+                    JOIN job_types jt ON rr.job_title_id = jt.id
                     JOIN job_types jty ON rr.job_type_id = jty.id
                     ORDER BY rr.id;
                 """)
@@ -724,7 +724,7 @@ class RecruitmentRequestViewSet(viewsets.ViewSet):
                            jty.type_name AS job_type
                     FROM recruitment_requests rr
                     JOIN request_service s ON rr.service_id = s.id
-                    JOIN jon_types jt ON rr.job_title_id = jt.id
+                    JOIN job_types jt ON rr.job_title_id = jt.id
                     JOIN job_types jty ON rr.job_type_id = jty.id
                     WHERE rr.id = %s;
                 """, [pk])
