@@ -1579,6 +1579,41 @@ class PurchaseRequestViewSet(viewsets.ViewSet):
             "justification": justification,
         }, status=status.HTTP_201_CREATED)
 
+    def partial_update(self, request, pk=None):
+        """PATCH /purchase_requests/{id}/ → modification partielle"""
+        fields = []
+        values = []
+
+        # On vérifie les champs envoyés et on construit la requête
+        for field in ["category_id", "estimated_budget", "request_title", "request_description", "justification"]:
+            if field in request.data:
+                fields.append(f"{field}=%s")
+                values.append(request.data[field])
+
+        if not fields:
+            return Response({"error": "No valid fields provided"}, status=400)
+
+        values.append(pk)  # ajouter l'id pour le WHERE
+        query = f"UPDATE purchase_requests SET {', '.join(fields)} WHERE id=%s"
+        with connection.cursor() as cursor:
+            cursor.execute(query, values)
+
+        # Retourner les données mises à jour
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT id, category_id, estimated_budget, request_title, request_description, justification FROM purchase_requests WHERE id=%s", [pk])
+            row = cursor.fetchone()
+            if not row:
+                return Response({"error": "Purchase request not found"}, status=404)
+            data = {
+                "id": row[0],
+                "category_id": row[1],
+                "estimated_budget": row[2],
+                "request_title": row[3],
+                "request_description": row[4],
+                "justification": row[5],
+            }
+        return Response(data)
+
     def update(self, request, pk=None):
         category_id = request.data.get("category_id")
         estimated_budget = request.data.get("estimated_budget")
