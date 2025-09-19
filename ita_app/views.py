@@ -1216,24 +1216,33 @@ class LeaveViewSet(viewsets.ViewSet):
         try:
             employee_id = data.get("employee_id")
             leave_type = data.get("leave_type")
-            start_date  = parse_date(data.get("start_date")) if data.get("start_date") else None
-            end_date = parse_date(data.get("end_date")) if data.get("end_date") else None
+            start_date_str = data.get("start_date")
+            end_date_str = data.get("end_date")
             #format_string = "'%Y-%m-%d"
             #start_datetime = datetime.strptime(start_date, format_string)
             #end_datetime = datetime.strptime(end_date, format_string)
             #duration = start_datetime - end_datetime
-            start = datetime.fromisoformat(start_date)
-            end = datetime.fromisoformat(end_date)
-            #duration = (end - start).days + 1  # +1 si inclusif
-            
-            workflow = data.get("workflow")
-            priority = data.get("priority")
-            leave_status = data.get("leave_status")
+            # Calcul automatique de la durée si start_date et end_date sont fournis
+            duration = None
+            if start_date_str and end_date_str:
+                from datetime import datetime
+                start_date_str = str(start_date_str)
+                end_date_str = str(end_date_str)
+                start = datetime.strptime(start_date_str, "%Y-%m-%d")
+                end = datetime.strptime(end_date_str, "%Y-%m-%d")
+                duration = (end - start).days + 1  # +1 si inclusif
+                
+                workflow = data.get("workflow")
+                priority = data.get("priority")
+                leave_status = data.get("leave_status")
 
             if not all([employee_id, leave_type, workflow, priority, leave_status]):
                 return Response({"status": "error", "message": "Champs obligatoires manquants"}, status=status.HTTP_400_BAD_REQUEST)
 
-            with connection.cursor() as cursor:
+            start_date_str = str(start_date_str) if start_date_str else None
+            end_date_str = str(end_date_str) if end_date_str else None
+
+            with connection.cursor() as cursor: 
                 cursor.execute("""
                     INSERT INTO leaves (employee_id, leave_type, start_date, end_date,
                                         workflow, priority, leave_status)
