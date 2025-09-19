@@ -1172,8 +1172,8 @@ class LeaveViewSet(viewsets.ViewSet):
                         "employee_id": row[1],
                         "leave_status": row[2],
                         "leave_type": row[3],
-                        "start_date": row[4].isoformat() if row[4] else None,
-                        "end_date": row[5].isoformat() if row[5] else None,
+                        "start_date": row[4],
+                        "end_date": row[5],
                         "duration": row[6],
                         "workflow": row[7],
                         "priority": row[8]
@@ -1200,8 +1200,8 @@ class LeaveViewSet(viewsets.ViewSet):
                     "leave_status": row[1],
                     "employee_function": row[2],
                     "leave_type": row[3],
-                    "start_date": row[4].isoformat() if row[4] else None,
-                    "end_date": row[5].isoformat() if row[5] else None,
+                    "start_date": row[4],
+                    "end_date": row[5],
                     "duration": row[6],
                     "workflow": row[7],
                     "priority": row[8]
