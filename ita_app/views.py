@@ -646,25 +646,26 @@ class RecruitmentRequestViewSet(viewsets.ViewSet):
             with connection.cursor() as cursor:
                 cursor.execute("""
                     SELECT rr.id,
-                           rr.priority,
+                           rr.service_id,
+                           rr.job_title_id,
+                           rr.job_type_id,
                            rr.salary,
                            rr.needs,
                            rr.skills,
                            rr.created_at,
                            rr.updated_at,
+                           rr.reference,
                            rr.creation_date,
                            rr.recruitment_status,
                            rr.end_period,
-                           s.id AS service_id,
+                           rr.priority,
                            s.name AS service_name,
                            s.chief AS service_chief,
-                           jt.id AS job_title_id,
                            jt.title AS job_title,
-                           jty.id AS job_type_id,
                            jty.type_name AS job_type
                     FROM recruitment_requests rr
                     JOIN request_service s ON rr.service_id = s.id
-                    JOIN job_types jt ON rr.job_title_id = jt.id
+                    JOIN job_titles jt ON rr.job_title_id = jt.id
                     JOIN job_types jty ON rr.job_type_id = jty.id
                     ORDER BY rr.id;
                 """)
@@ -673,27 +674,28 @@ class RecruitmentRequestViewSet(viewsets.ViewSet):
                 for r in rows:
                     results.append({
                         "id": r[0],
-                        "priority": r[1],
-                        "salary": r[2],
-                        "needs": r[3],
-                        "skills": r[4],
-                        "created_at": r[5],
-                        "updated_at": r[6],
-                        "creation_date": r[7],
-                        "recruitment_status": r[8],
-                        "end_period": r[9],
+                        "service_id": r[1],
+                        "job_title_id": r[2],
+                        "job_type_id": r[3],
+                        "salary": r[4],
+                        "needs": r[5],
+                        "skills": r[6],
+                        "created_at": r[7],
+                        "updated_at": r[8],
+                        "reference": r[9],
+                        "creation_date": r[10],
+                        "recruitment_status": r[11],
+                        "end_period": r[12],
+                        "priority": r[13],
                         "service": {
-                            "id": r[10],
-                            "name": r[11],
-                            "chief": r[12],
+                            "name": r[14],
+                            "chief": r[15],
                         },
                         "job_title": {
-                            "id": r[13],
-                            "title": r[14],
+                            "title": r[16],
                         },
                         "job_type": {
-                            "id": r[15],
-                            "type_name": r[16],
+                            "type_name": r[17],
                         }
                     })
             return Response({"status": "ok", "recruitments": results})
@@ -706,21 +708,22 @@ class RecruitmentRequestViewSet(viewsets.ViewSet):
             with connection.cursor() as cursor:
                 cursor.execute("""
                     SELECT rr.id,
-                           rr.priority,
+                           rr.service_id,
+                           rr.job_title_id,
+                           rr.job_type_id,
                            rr.salary,
                            rr.needs,
                            rr.skills,
                            rr.created_at,
                            rr.updated_at,
+                           rr.reference,
                            rr.creation_date,
                            rr.recruitment_status,
                            rr.end_period,
-                           s.id AS service_id,
+                           rr.priority,
                            s.name AS service_name,
                            s.chief AS service_chief,
-                           jt.id AS job_title_id,
                            jt.title AS job_title,
-                           jty.id AS job_type_id,
                            jty.type_name AS job_type
                     FROM recruitment_requests rr
                     JOIN request_service s ON rr.service_id = s.id
@@ -733,27 +736,28 @@ class RecruitmentRequestViewSet(viewsets.ViewSet):
                     return Response({"status": "error", "message": "Requête non trouvée"}, status=status.HTTP_404_NOT_FOUND)
                 recruitment = {
                     "id": r[0],
-                    "priority": r[1],
-                    "salary": r[2],
-                    "needs": r[3],
-                    "skills": r[4],
-                    "created_at": r[5],
-                    "updated_at": r[6],
-                    "creation_date": r[7],
-                    "recruitment_status": r[8],
-                    "end_period": r[9],
+                    "service_id": r[1],
+                    "job_title_id": r[2],
+                    "job_type_id": r[3],
+                    "salary": r[4],
+                    "needs": r[5],
+                    "skills": r[6],
+                    "created_at": r[7],
+                    "updated_at": r[8],
+                    "reference": r[9],
+                    "creation_date": r[10],
+                    "recruitment_status": r[11],
+                    "end_period": r[12],
+                    "priority": r[13],
                     "service": {
-                        "id": r[10],
-                        "name": r[11],
-                        "chief": r[12],
+                        "name": r[14],
+                        "chief": r[15],
                     },
                     "job_title": {
-                        "id": r[13],
-                        "title": r[14],
+                        "title": r[16],
                     },
                     "job_type": {
-                        "id": r[15],
-                        "type_name": r[16],
+                        "type_name": r[17],
                     }
                 }
             return Response({"status": "ok", "recruitment": recruitment})
@@ -767,11 +771,12 @@ class RecruitmentRequestViewSet(viewsets.ViewSet):
         job_title_id = data.get("job_title_id")
         job_type_id = data.get("job_type_id")
         salary = data.get("salary")
-        priority = data.get("priority")
+        priority = data.get("priority")  # 'urgent', 'normal', 'differable'
         needs = data.get("needs")
         skills = data.get("skills")
         recruitment_status = data.get("recruitment_status")
         end_period = data.get("end_period")
+        reference = data.get("reference")
 
         creation_date = datetime.date.today()
         created_at = datetime.datetime.now()
@@ -782,11 +787,11 @@ class RecruitmentRequestViewSet(viewsets.ViewSet):
                 cursor.execute("""
                     INSERT INTO recruitment_requests
                     (service_id, job_title_id, job_type_id, salary, needs, skills,
-                     created_at, updated_at, creation_date, recruitment_status, end_period,priority)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                     created_at, updated_at, reference, creation_date, recruitment_status, end_period, priority)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id;
                 """, [service_id, job_title_id, job_type_id, salary, needs, skills,
-                      created_at, updated_at, creation_date, recruitment_status, end_period,priority])
+                      created_at, updated_at, reference, creation_date, recruitment_status, end_period, priority])
                 request_id = cursor.fetchone()[0]
 
             return self.retrieve(request, pk=request_id)
@@ -799,7 +804,8 @@ class RecruitmentRequestViewSet(viewsets.ViewSet):
         """PUT /recruitments/{id}/ → mise à jour complète"""
         data = request.data
         updated_at = datetime.datetime.now()
-        fields = ["service_id", "job_title_id", "job_type_id", "priority", "salary", "needs", "skills", "recruitment_status", "end_period"]
+        fields = ["service_id", "job_title_id", "job_type_id", "salary", "needs", "skills",
+                  "recruitment_status", "end_period", "priority", "reference"]
         set_clause = []
         values = []
         for f in fields:
@@ -841,7 +847,7 @@ class RecruitmentRequestViewSet(viewsets.ViewSet):
                     return Response({"status": "error", "message": "Requête non trouvée"}, status=status.HTTP_404_NOT_FOUND)
             return Response({"status": "ok", "message": "Requête supprimée", "id": pk})
         except Exception as e:
-                    return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 
