@@ -1211,35 +1211,67 @@ class LeaveViewSet(viewsets.ViewSet):
             return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def create(self, request):
-        """POST /leaves/ → créer une demande de congé"""
+        """POST /leaves/ → créer une demande de congé avec calcul manuel de duration"""
         data = request.data
         try:
+            # Récupération des champs
             employee_id = data.get("employee_id")
             leave_type = data.get("leave_type")
-            
-            start  = data.get("start_date")
-            end = data.get("end_date")
-            start_date = datetime.strptime(str(start), "%Y-%m-%d")
-            end_date = datetime.strptime(str(end), "%Y-%m-%d")
-            duration = (end - start).days + 1
-            
+            start_date_str = data.get("start_date")
+            end_date_str = data.get("end_date")
             workflow = data.get("workflow")
             priority = data.get("priority")
             leave_status = data.get("leave_status")
 
-            if not all([employee_id, leave_type,start_date,end_date, workflow, priority, leave_status]):
-                return Response({"status": "error", "message": "Champs obligatoires manquants"}, status=status.HTTP_400_BAD_REQUEST)
+            # Vérification des champs obligatoires
+            if not all([employee_id, leave_type, workflow, priority, leave_status]):
+                return Response(
+                    {"status": "error", "message": "Champs obligatoires manquants"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
+            # Conversion des dates et calcul de la durée si fournies
+            duration = None
+            if start_date_str and end_date_str:
+                from datetime import datetime
+
+                try:
+                    start = datetime.strptime(str(start_date_str), "%Y-%m-%d").date()
+                    end = datetime.strptime(str(end_date_str), "%Y-%m-%d").date()
+                except ValueError:
+                    return Response(
+                        {"status": "error", "message": "Format de date invalide, attendu YYYY-MM-DD"},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+                if start > end:
+                    return Response(
+                        {"status": "error", "message": "start_date doit être <= end_date"},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+                duration = (end - start).days + 1  # durée en jours, inclusif
+
+            # Insertion dans la base de données
             with connection.cursor() as cursor:
                 cursor.execute("""
-                    INSERT INTO leaves (employee_id, leave_type, start_date, end_date,
-                                        workflow, priority, leave_status,duration)
+                    INSERT INTO leaves (employee_id, leave_type, start_date, end_date, duration,
+                                        workflow, priority, leave_status)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id;
-                """, [employee_id, leave_type, start, end, workflow, priority, leave_status,duration])
-                new_id = cursor.fetchone()[0]
+                """, [employee_id, leave_type, start_date_str, end_date_str, duration,
+                    workflow, priority, leave_status])
 
-            return Response({"status": "success", "message": "Leave request created", "id": new_id}, status=status.HTTP_201_CREATED)
+                new_id_row = cursor.fetchone()
+                if not new_id_row:
+                    return Response({"status": "error", "message": "Erreur lors de la création"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                new_id = new_id_row[0]
+
+            return Response(
+                {"status": "success", "message": "Leave request created", "id": new_id},
+                status=status.HTTP_201_CREATED
+            )
+
         except Exception as e:
             return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
