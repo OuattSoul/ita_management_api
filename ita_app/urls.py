@@ -1,5 +1,5 @@
 from rest_framework.routers import DefaultRouter
-from .views import UserRoleViewSet,PresenceViewSet,LeaveViewSet,UserViewSet,EmployeeViewSet,RecruitmentRequestViewSet,JobTitleViewSet,EmployeeAttendanceViewSet,MissionViewSet
+from .views import JobTypeViewSet,UserRoleViewSet,PresenceViewSet,LeaveViewSet,UserViewSet,EmployeeViewSet,RecruitmentRequestViewSet,JobTitleViewSet,EmployeeAttendanceViewSet,MissionViewSet
 
 router = DefaultRouter()
 router.register(r'api/users', UserViewSet, basename='user')
@@ -12,6 +12,6 @@ router.register(r'api/leaves', LeaveViewSet, basename='leave')
 router.register(r'api/attendances', PresenceViewSet, basename='presence')
 router.register(r'api/roles', UserRoleViewSet, basename='user_roles')
 router.register(r'api/job/types', JobTitleViewSet, basename='job_types')
-router.register(r'api/job/titles', JobTitleViewSet, basename='job_titles')
+router.register(r'api/job/titles', JobTypeViewSet, basename='job_titles')
 
 urlpatterns = router.urls
